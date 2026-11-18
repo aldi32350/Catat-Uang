@@ -150,7 +150,7 @@ export function mulaiWeb({ port, host, wa }) {
       }
       if (M === 'GET' && p === '/api/transaksi') {
         const [dari, sampai] = rentangBulan(url.searchParams.get('bulan'));
-        return json(res, 200, db.daftar({ uid, dari, sampai }));
+        return json(res, 200, db.daftar({ uid, dari, sampai, akun_id: Number(url.searchParams.get('akun')) || undefined }));
       }
       if (M === 'POST' && p === '/api/transaksi') {
         const b = await bacaBody(req);
@@ -165,10 +165,35 @@ export function mulaiWeb({ port, host, wa }) {
           if (b.tanggal > hariIni) return json(res, 400, { error: 'Tanggal tidak boleh di masa depan' });
           if (b.tanggal < hariIni) dibuat = `${b.tanggal} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
         }
-        return json(res, 201, db.tambah({ uid, tipe: b.tipe, jumlah, keterangan, kategori: tebakKategori(keterangan, b.tipe), pengirim: 'web', dibuat }));
+        return json(res, 201, db.tambah({ uid, tipe: b.tipe, jumlah, keterangan, kategori: tebakKategori(keterangan, b.tipe), pengirim: 'web', dibuat, akun_id: Number(b.akun_id) || null }));
       }
       const mHapus = p.match(/^\/api\/transaksi\/(\d+)$/);
       if (M === 'DELETE' && mHapus) return json(res, db.hapus(Number(mHapus[1]), uid) ? 200 : 404, {});
+
+      // ---------- Sumber dana (tunai / bank / e-wallet) ----------
+      if (M === 'GET' && p === '/api/akun') {
+        return json(res, 200, { akun: db.daftarAkun(uid), preset: db.AKUN_PRESET.map(({ nama, jenis }) => ({ nama, jenis })) });
+      }
+      if (M === 'POST' && p === '/api/akun') {
+        const b = await bacaBody(req);
+        try { return json(res, 201, db.buatAkun({ uid, nama: b.nama, jenis: b.jenis })); } catch (e) { return json(res, 400, { error: e.message }); }
+      }
+      if (M === 'POST' && p === '/api/akun/transfer') {
+        const b = await bacaBody(req);
+        const r = db.transferAkun({ uid, dari: Number(b.dari), ke: Number(b.ke), jumlah: Math.round(Number(b.jumlah)), pengirim: 'web' });
+        return json(res, r.ok ? 200 : 400, r.ok ? r : { error: r.alasan });
+      }
+      const mAkun = p.match(/^\/api\/akun\/(\d+)(?:\/(ubah|utama))?$/);
+      if (mAkun) {
+        const id = Number(mAkun[1]);
+        if (M === 'DELETE' && !mAkun[2]) { const r = db.hapusAkun(id, uid); return json(res, r.ok ? 200 : 400, r.ok ? r : { error: r.alasan }); }
+        if (M === 'POST' && mAkun[2] === 'utama') return json(res, db.setAkunUtama(id, uid) ? 200 : 404, {});
+        if (M === 'POST' && mAkun[2] === 'ubah') {
+          const b = await bacaBody(req);
+          try { const a = db.ubahAkun(id, uid, b); return a ? json(res, 200, a) : json(res, 404, { error: 'Tidak ditemukan' }); }
+          catch (e) { return json(res, 400, { error: e.message }); }
+        }
+      }
 
       // ---------- Tabungan ----------
       if (M === 'GET' && p === '/api/tabungan') {
@@ -199,8 +224,8 @@ export function mulaiWeb({ port, host, wa }) {
           }
           const jumlah = b.jumlah == null ? null : Math.round(Number(b.jumlah));
           const r = aksi === 'setor'
-            ? db.setorTabungan({ uid, id, jumlah, pengirim: 'web' })
-            : db.tarikTabungan({ uid, id, jumlah, pengirim: 'web' });
+            ? db.setorTabungan({ uid, id, jumlah, pengirim: 'web', akun_id: Number(b.akun_id) || null })
+            : db.tarikTabungan({ uid, id, jumlah, pengirim: 'web', akun_id: Number(b.akun_id) || null });
           return json(res, r.ok ? 200 : 400, r.ok ? r : { error: r.alasan });
         }
       }
@@ -218,7 +243,7 @@ export function mulaiWeb({ port, host, wa }) {
           return json(res, 400, { error: 'Jenis, nama, atau jumlah tidak valid' });
         }
         return json(res, 201, db.buatHutang({ uid, jenis: b.jenis, nama, jumlah,
-          keterangan: String(b.keterangan || '').trim().slice(0, 200), jatuh_tempo: tempo, pengirim: 'web' }));
+          keterangan: String(b.keterangan || '').trim().slice(0, 200), jatuh_tempo: tempo, pengirim: 'web', akun_id: Number(b.akun_id) || null }));
       }
       const mHutang = p.match(/^\/api\/hutang\/(\d+)(\/bayar)?$/);
       if (mHutang) {
@@ -231,7 +256,7 @@ export function mulaiWeb({ port, host, wa }) {
           const b = await bacaBody(req);
           const jumlah = b.jumlah == null ? null : Math.round(Number(b.jumlah));
           if (jumlah !== null && !(jumlah > 0)) return json(res, 400, { error: 'Jumlah tidak valid' });
-          const r = db.bayarHutang({ uid, id, jumlah, pengirim: 'web' });
+          const r = db.bayarHutang({ uid, id, jumlah, pengirim: 'web', akun_id: Number(b.akun_id) || null });
           return json(res, r.ok ? 200 : 400, r.ok ? r : { error: r.alasan });
         }
         if (M === 'DELETE' && !mHutang[2]) return json(res, db.hapusHutang(id, uid) ? 200 : 404, {});

@@ -113,8 +113,23 @@ export function uraiTeksStruk(teks, sekarang = new Date()) {
     ringkasan: toko ? (tipe === 'masuk' ? `transfer dari ${toko}` : `belanja ${toko}`) : (tipe === 'masuk' ? 'transfer masuk' : 'belanja'),
     kategori: tebakKategori(`${toko} ${gabung.slice(0, 400)}`, tipe),
     yakin,
+    metode_bayar: bacaMetodeBayar(gabung),
     sumber: 'ocr',
   };
+}
+
+/** Cara bayar yang tertulis di struk → nama sumber dana ('' bila tidak ketemu). E-wallet & bank didahulukan dari tunai. */
+export function bacaMetodeBayar(teks) {
+  const t = ` ${teks.toLowerCase()} `;
+  const POLA = [
+    [/go\s*-?\s*pay\b/, 'GoPay'], [/\bovo\b/, 'OVO'], [/shopee\s*pay|\bspay\b/, 'ShopeePay'], [/link\s*aja/, 'LinkAja'],
+    [/\bdana\b(?!\s*(?:masuk|keluar|darurat|tunai))/, 'DANA'],
+    [/\bbca\b/, 'BCA'], [/\bbri\b|brimo/, 'BRI'], [/\bbni\b/, 'BNI'], [/\bmandiri\b|livin/, 'Mandiri'], [/\bbsi\b/, 'BSI'],
+    [/\bbtn\b/, 'BTN'], [/\bcimb\b/, 'CIMB Niaga'], [/seabank|sea bank/, 'SeaBank'], [/bank\s*jago/, 'Jago'],
+    [/\b(?:tunai|cash)\b/, 'Tunai'],
+  ];
+  for (const [re, nama] of POLA) if (re.test(t)) return nama;
+  return '';
 }
 
 /**

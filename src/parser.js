@@ -299,3 +299,60 @@ function tanggalLewat(d, b, t, hari0) {
   }
   return null;
 }
+
+// ======================= Sumber dana (bank / e-wallet / tunai) =======================
+
+const PENANDA_AKUN = String.raw`(?:bayar\s+(?:pakai|pake|pk|via|dari|lewat)|transfer\s+ke|tf\s+ke|masuk\s+ke|pakai|pake|pakek|pk|via|dari|ke|lewat|dgn|dengan|rekening|rek)`;
+// Setelah nama yang ambigu (mis. "dana") harus akhir kalimat, angka, atau kata waktu — agar "dana darurat" tidak terbaca DANA
+const SETELAH_AMBIGU = String.raw`(?=\s*$|\s*[,.!]|\s+(?:\d|kemarin|kemaren|kmrn|tadi|tgl|tanggal|hari|lalu|senin|selasa|rabu|kamis|jum'?at|sabtu|minggu))`;
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, String.raw`\s+`);
+
+/** Daftar kandidat sumber dana: milik user + preset. Alias terpanjang dicek lebih dulu. */
+function kandidatAkun(akunUser, preset, butuhPenanda) {
+  const daftar = [];
+  const sudah = new Set();
+  for (const p of preset) {
+    const milik = akunUser.find((a) => a.nama.toLowerCase() === p.nama.toLowerCase());
+    for (const alias of p.alias) {
+      daftar.push({ nama: milik?.nama || p.nama, jenis: milik?.jenis || p.jenis, alias, butuh: butuhPenanda.has(alias) });
+    }
+    sudah.add(p.nama.toLowerCase());
+  }
+  for (const a of akunUser) {
+    if (sudah.has(a.nama.toLowerCase())) continue;
+    daftar.push({ nama: a.nama, jenis: a.jenis, alias: a.nama.toLowerCase(), butuh: true });
+  }
+  return daftar.sort((x, y) => y.alias.length - x.alias.length);
+}
+
+/**
+ * Mencari SATU sumber dana yang disebut di pesan, lalu membuangnya dari teks.
+ * "keluar 25rb bakso pakai dana" → { akun: {nama:'DANA', jenis:'ewallet'}, sisa: 'keluar 25rb bakso' }
+ */
+export function bacaAkun(teks, akunUser = [], preset = [], butuhPenanda = new Set()) {
+  const semua = bacaSemuaAkun(teks, akunUser, preset, butuhPenanda, 1);
+  return { akun: semua.akun[0] || null, sisa: semua.sisa };
+}
+
+/** Mencari beberapa sumber dana berurutan sesuai posisinya di kalimat (untuk transfer). */
+export function bacaSemuaAkun(teks, akunUser = [], preset = [], butuhPenanda = new Set(), maks = 2) {
+  const kand = kandidatAkun(akunUser, preset, butuhPenanda);
+  const ketemu = [];
+  let sisa = ` ${teks} `;
+  for (let n = 0; n < maks; n++) {
+    let terbaik = null;
+    for (const k of kand) {
+      const a = escRe(k.alias);
+      const pola = [new RegExp(String.raw`(?<=\s)${PENANDA_AKUN}\s+${a}\b${k.butuh ? SETELAH_AMBIGU : ''}`, 'i')];
+      if (!k.butuh) pola.push(new RegExp(String.raw`(?<=\s)${a}\b`, 'i'));
+      for (const re of pola) {
+        const m = sisa.match(re);
+        if (m && (!terbaik || m.index < terbaik.m.index)) terbaik = { k, m };
+      }
+    }
+    if (!terbaik) break;
+    ketemu.push({ akun: { nama: terbaik.k.nama, jenis: terbaik.k.jenis }, posisi: terbaik.m.index, teks: terbaik.m[0] });
+    sisa = sisa.slice(0, terbaik.m.index) + ' ' + sisa.slice(terbaik.m.index + terbaik.m[0].length);
+  }
+  return { akun: ketemu.sort((a, b) => a.posisi - b.posisi).map((x) => x.akun), cocok: ketemu, sisa: sisa.replace(/\s+/g, ' ').trim() };
+}
