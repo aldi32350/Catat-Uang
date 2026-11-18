@@ -1,4 +1,10 @@
-import { mulaiWeb } from './web.js';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Baca pengaturan dari file .env (mis. ANTHROPIC_API_KEY) bila ada.
+try { process.loadEnvFile(join(dirname(fileURLToPath(import.meta.url)), '..', '.env')); } catch { /* tidak ada .env */ }
+
+const { mulaiWeb } = await import('./web.js');
 
 const argPort = process.argv.find((a) => a.startsWith('--port='))?.slice(7);
 const PORT = Number(argPort || process.env.PORT || 3000);

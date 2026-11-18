@@ -6,11 +6,12 @@ import pino from 'pino';
 import { join, dirname } from 'node:path';
 import { rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { prosesPesan } from './balasan.js';
+import { prosesPesan, balasStruk } from './balasan.js';
+import { bacaStruk, aiAktif } from './struk.js';
 
 const B = Baileys.default?.makeWASocket ? Baileys.default : Baileys;
 const makeWASocket = B.makeWASocket || B.default;
-const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = B;
+const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } = B;
 
 const AUTH_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'sesi-wa');
 
@@ -76,11 +77,14 @@ export async function mulaiBot() {
         if (!msg.message || terkirim.has(msg.key.id)) continue;
         if (jid.endsWith('@g.us') || jid === 'status@broadcast') continue; // abaikan grup & status
 
+        // Foto dikirim biasa, atau sebagai dokumen bergambar
+        const doc = msg.message.documentMessage;
+        const foto = msg.message.imageMessage || (doc?.mimetype?.startsWith('image/') ? doc : null);
         const teks = msg.message.conversation
           || msg.message.extendedTextMessage?.text
-          || msg.message.imageMessage?.caption
+          || foto?.caption
           || '';
-        if (!teks) continue;
+        if (!teks && !foto) continue;
 
         const diriSendiri = [sock.user?.id, sock.user?.lid].filter(Boolean).map(nomorDari);
         const chatDiri = diriSendiri.includes(nomorDari(jid));
@@ -90,10 +94,24 @@ export async function mulaiBot() {
         const boleh = (msg.key.fromMe && chatDiri) || (!msg.key.fromMe && NOMOR_DIIZINKAN.includes(pengirimNomor));
         if (!boleh) continue;
 
-        const balasan = prosesPesan(teks, pengirimNomor);
-        if (!balasan) continue;
-        const kirim = await sock.sendMessage(jid, { text: balasan }, { quoted: msg });
-        if (kirim?.key?.id) terkirim.add(kirim.key.id);
+        const balas = async (text) => {
+          const kirim = await sock.sendMessage(jid, { text }, { quoted: msg });
+          if (kirim?.key?.id) terkirim.add(kirim.key.id);
+        };
+
+        // Caption berisi perintah/transaksi lengkap (mis. "keluar 50rb makan") → catat langsung tanpa AI
+        const dariTeks = teks ? prosesPesan(teks, pengirimNomor) : null;
+        if (dariTeks) { await balas(dariTeks); continue; }
+        if (!foto) continue;
+
+        if (!aiAktif()) {
+          await balas('📷 Fitur baca struk belum aktif: kunci API Anthropic belum dipasang (lihat README, bagian "Foto struk").\n\nCatat manual dulu, mis. *keluar 50rb belanja*.');
+          continue;
+        }
+        await balas('🔎 Sedang membaca struk...');
+        const gambar = await downloadMediaMessage(msg, 'buffer', {}, { reuploadRequest: sock.updateMediaMessage });
+        const hasil = await bacaStruk(gambar, foto.mimetype, teks);
+        await balas(balasStruk(hasil, pengirimNomor, teks));
       } catch (e) {
         console.error('Gagal memproses pesan:', e.message);
       }

@@ -22,10 +22,12 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_transaksi_dibuat ON transaksi(dibuat);
 `);
 
-export function tambah({ tipe, jumlah, keterangan = '', kategori = 'Lainnya', pengirim = 'web' }) {
-  const r = db
-    .prepare('INSERT INTO transaksi (tipe, jumlah, keterangan, kategori, pengirim) VALUES (?,?,?,?,?)')
-    .run(tipe, jumlah, keterangan, kategori, pengirim);
+export function tambah({ tipe, jumlah, keterangan = '', kategori = 'Lainnya', pengirim = 'web', dibuat }) {
+  const r = dibuat
+    ? db.prepare('INSERT INTO transaksi (tipe, jumlah, keterangan, kategori, pengirim, dibuat) VALUES (?,?,?,?,?,?)')
+      .run(tipe, jumlah, keterangan, kategori, pengirim, dibuat)
+    : db.prepare('INSERT INTO transaksi (tipe, jumlah, keterangan, kategori, pengirim) VALUES (?,?,?,?,?)')
+      .run(tipe, jumlah, keterangan, kategori, pengirim);
   return ambil(Number(r.lastInsertRowid));
 }
 

@@ -15,7 +15,9 @@ const KATEGORI = [
   ['Usaha', ['jual', 'jualan', 'penjualan', 'omzet', 'order', 'pesanan', 'laba']],
 ];
 
-const SATUAN = { rb: 1e3, ribu: 1e3, k: 1e3, jt: 1e6, juta: 1e6, m: 1e6 };
+export const DAFTAR_KATEGORI = [...KATEGORI.map(([nama]) => nama), 'Pemasukan Lain', 'Lainnya'];
+
+const SATUAN ={ rb: 1e3, ribu: 1e3, k: 1e3, jt: 1e6, juta: 1e6, m: 1e6 };
 const RE_JUMLAH = /(?:rp\.?\s*)?(\d+(?:[.,]\d+)*)\s*(rb|ribu|k|jt|juta|m)?(?![a-z])/i;
 
 /** "25rb" → 25000, "1,5jt" → 1500000, "25.000" → 25000. Mengembalikan null bila tidak valid. */
