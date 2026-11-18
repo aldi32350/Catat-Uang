@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a8dff"/>
+      <stop offset="1" stop-color="#0b55d9"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg)"/>
+  <!-- lembar catatan di belakang dompet -->
+  <rect x="21" y="10" width="24" height="20" rx="4" fill="#bcd8ff" transform="rotate(-10 33 20)"/>
+  <!-- dompet -->
+  <rect x="12" y="21" width="40" height="31" rx="9" fill="#fff"/>
+  <rect x="35" y="31" width="17" height="11" rx="5.5" fill="#dceaff"/>
+  <circle cx="41" cy="36.5" r="2.4" fill="#0b55d9"/>
+  <!-- tanda centang = tercatat -->
+  <path d="M19 36.5l4.5 4.5 8-8.5" fill="none" stroke="#1667ea" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

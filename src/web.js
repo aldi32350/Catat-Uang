@@ -37,6 +37,10 @@ export function mulaiWeb({ port, host, status }) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         return res.end(readFileSync(HTML));
       }
+      if (req.method === 'GET' && url.pathname === '/logo.svg') {
+        res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=86400' });
+        return res.end(readFileSync(join(dirname(HTML), 'logo.svg')));
+      }
       if (req.method === 'GET' && url.pathname === '/api/status') {
         return json(res, 200, status || { terhubung: false, nonaktif: true });
       }

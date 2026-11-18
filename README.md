@@ -1,4 +1,6 @@
-# 📒 Catat Keuangan via WhatsApp
+<img src="public/logo.svg" width="72" alt="Logo Catat Uang">
+
+# Catat Uang — Catat Keuangan via WhatsApp
 
 Catat uang **masuk** dan **keluar** cukup dengan chat WhatsApp. Bot langsung membalas dengan **saldo terakhir**. Ada juga dashboard web untuk melihat riwayat dan mengunduh Excel.
 

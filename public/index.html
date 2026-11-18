@@ -3,14 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#4338ca">
+<meta name="theme-color" content="#1667ea">
 <title>Catat Uang</title>
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
+<link rel="apple-touch-icon" href="/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --brand: #4f46e5; --brand-2: #7c3aed; --brand-dark: #3730a3;
-    --bg: #eef0f7; --card: #ffffff; --text: #151827; --muted: #6b7088; --line: #e6e8f0;
+    --brand: #1667ea; --brand-2: #2f9bff; --brand-dark: #0b4fc4;
+    --bg: #eef3fb; --card: #ffffff; --text: #151827; --muted: #6b7088; --line: #e6e8f0;
     --green: #0e9f6e; --green-bg: #e3f7ee; --red: #e02d3c; --red-bg: #fde8ea;
-    --chip: #f2f3f9; --shadow: 0 6px 24px rgba(40, 44, 90, .10);
+    --chip: #f2f3f9; --shadow: 0 6px 24px rgba(20, 60, 130, .10);
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0d0f17; --card: #171a26; --text: #eef0f8; --muted: #9aa0b8; --line: #262a3a;
@@ -19,8 +24,8 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; }
-  body { background: #d9dcea; color: var(--text);
-    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { background: #dde6f3; color: var(--text);
+    font: 16px/1.45 "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   @media (prefers-color-scheme: dark) { body { background: #05060a; } }
   button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
   input { font: inherit; color: inherit; }
@@ -31,22 +36,35 @@
   @media (min-width: 520px) { .app { box-shadow: 0 0 60px rgba(0,0,0,.15); } }
 
   /* ---------- header & kartu saldo ---------- */
-  .top { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff;
-    padding: 18px 18px 92px; border-radius: 0 0 28px 28px; position: relative; overflow: hidden; }
-  .top::before, .top::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.08); }
-  .top::before { width: 220px; height: 220px; right: -70px; top: -90px; }
-  .top::after { width: 140px; height: 140px; left: -50px; bottom: -40px; }
+  .top { background: radial-gradient(120% 90% at 100% 0%, #4fb0ff 0%, rgba(79,176,255,0) 55%),
+      linear-gradient(160deg, var(--brand-2) 0%, var(--brand) 45%, var(--brand-dark) 100%); color: #fff;
+    padding: 16px 18px 70px; border-radius: 0 0 30px 30px; position: relative; overflow: hidden; }
+  .top::before, .top::after { content: ""; position: absolute; border-radius: 50%; border: 28px solid rgba(255,255,255,.06); }
+  .top::before { width: 260px; height: 260px; right: -110px; top: -120px; }
+  .top::after { width: 180px; height: 180px; left: -90px; bottom: -110px; }
   .hello { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
-  .hello small { opacity: .85; font-size: 14px; }
-  .hello h1 { margin: 0; font-size: 20px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand img { width: 40px; height: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,30,90,.25); }
+  .brand small { display: block; opacity: .85; font-size: 12.5px; line-height: 1.2; }
+  .brand b { font-size: 18px; letter-spacing: -.2px; }
+  .bal { position: relative; z-index: 1; margin-top: 22px; }
+  .bal .wallet-label { color: rgba(255,255,255,.85); }
+  .bal .eye { color: #fff; }
+  .bal .eye:hover { background: rgba(255,255,255,.15); }
+  .bal .amount { color: #fff; font-size: 38px; margin-bottom: 14px; }
+  .bal .amount .rp { color: rgba(255,255,255,.8); }
+  .bal .mini div { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(8px); }
+  .bal .mini small { color: rgba(255,255,255,.8); }
+  .bal .mini .plus { color: #b6ffd9; } .bal .mini .minus { color: #ffd0d6; }
   .wa-chip { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.18); padding: 6px 12px;
     border-radius: 99px; font-size: 13px; font-weight: 600; backdrop-filter: blur(6px); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; }
   .dot.on { background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.3); }
   .dot.off { background: #f87171; }
 
-  .wallet { position: relative; z-index: 2; margin: -76px 16px 0; background: var(--card); border-radius: 22px;
-    box-shadow: var(--shadow); padding: 18px 18px 14px; }
+  .wallet { position: relative; z-index: 2; margin: -48px 16px 0; background: var(--card); border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(20, 60, 130, .14); padding: 14px 10px; }
+  @media (prefers-color-scheme: dark) { .wallet { box-shadow: 0 10px 30px rgba(0,0,0,.4); } }
   .wallet-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; font-weight: 600; }
   .eye { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
   .eye:hover { background: var(--chip); }
@@ -56,17 +74,16 @@
   .mini div { background: var(--chip); border-radius: 14px; padding: 10px 12px; }
   .mini small { display: block; color: var(--muted); font-size: 12.5px; }
   .mini b { font-size: 15.5px; }
-  .actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 16px; padding-top: 14px;
-    border-top: 1px dashed var(--line); }
+  .actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
   .act { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 4px 0; border-radius: 12px; }
   .act:active { transform: scale(.96); }
   .act i { width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; font-style: normal; }
   .act i svg { width: 24px; height: 24px; }
   .i-in { background: var(--green-bg); color: var(--green); }
   .i-out { background: var(--red-bg); color: var(--red); }
-  .i-rep { background: #ece9ff; color: var(--brand); }
+  .i-rep { background: #e5efff; color: var(--brand); }
   .i-dl { background: #fff3dc; color: #c67a00; }
-  @media (prefers-color-scheme: dark) { .i-rep { background: #24224a; color: #a5a1ff; } .i-dl { background: #33280f; color: #ffb84d; } }
+  @media (prefers-color-scheme: dark) { .i-rep { background: #13294a; color: #6fb0ff; } .i-dl { background: #33280f; color: #ffb84d; } }
 
   /* ---------- konten ---------- */
   main { padding: 0 16px; }
@@ -74,7 +91,7 @@
   .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .sec-head h2 { font-size: 17px; margin: 0; }
   .link { color: var(--brand); font-weight: 700; font-size: 14px; }
-  @media (prefers-color-scheme: dark) { .link { color: #a5a1ff; } }
+  @media (prefers-color-scheme: dark) { .link { color: #6fb0ff; } }
   .card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
 
   .promo { display: flex; gap: 12px; align-items: center; padding: 14px 16px; background: linear-gradient(120deg, #fff6e0, #ffe9f0);
@@ -117,7 +134,7 @@
   .sum3 > div + div { border-left: 1px solid var(--line); }
   .btn-wide { display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; padding: 14px; border-radius: 16px;
     background: var(--card); box-shadow: var(--shadow); font-weight: 700; color: var(--brand); margin-top: 14px; text-decoration: none; }
-  @media (prefers-color-scheme: dark) { .btn-wide { color: #a5a1ff; } }
+  @media (prefers-color-scheme: dark) { .btn-wide { color: #6fb0ff; } }
 
   .qr-card { padding: 20px; text-align: center; }
   .qr-card img { width: 240px; max-width: 100%; background: #fff; padding: 10px; border-radius: 16px; }
@@ -135,13 +152,13 @@
   nav button { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 600; color: var(--muted); padding: 4px 0; }
   nav button svg { width: 24px; height: 24px; }
   nav button.on { color: var(--brand); }
-  @media (prefers-color-scheme: dark) { nav button.on { color: #a5a1ff; } }
+  @media (prefers-color-scheme: dark) { nav button.on { color: #6fb0ff; } }
   nav .fab { position: relative; top: -22px; }
   nav .fab span { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; color: #fff;
-    background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: 0 8px 20px rgba(79,70,229,.45); border: 4px solid var(--card); }
+    background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: 0 8px 20px rgba(22,103,234,.40); border: 4px solid var(--card); }
   nav .fab span svg { width: 28px; height: 28px; }
   nav .fab em { font-style: normal; margin-top: 2px; color: var(--brand); }
-  @media (prefers-color-scheme: dark) { nav .fab em { color: #a5a1ff; } }
+  @media (prefers-color-scheme: dark) { nav .fab em { color: #6fb0ff; } }
 
   /* ---------- lembar bawah (bottom sheet) ---------- */
   .scrim { position: fixed; inset: 0; background: rgba(10,12,30,.45); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; }
@@ -190,11 +207,10 @@
   <section id="page-home">
     <div class="top">
       <div class="hello">
-        <div><small id="greet">Halo</small><h1>Catat Uang</h1></div>
+        <div class="brand"><img src="/logo.svg" alt=""><div><small id="greet">Halo</small><b>Catat Uang</b></div></div>
         <button class="wa-chip" data-go="wa"><span class="dot" id="waDot"></span><span id="waText">WhatsApp</span></button>
       </div>
-    </div>
-    <div class="wallet">
+      <div class="bal">
       <div class="wallet-label">Saldo kamu
         <button class="eye" id="eye" aria-label="Sembunyikan saldo">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path id="eyePath" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle id="eyeDot" cx="12" cy="12" r="3"/><line id="eyeSlash" x1="3" y1="3" x2="21" y2="21" hidden/></svg>
@@ -205,6 +221,9 @@
         <div><small>Masuk bulan ini</small><b class="plus money" id="mIn" data-v="0">Rp0</b></div>
         <div><small>Keluar bulan ini</small><b class="minus money" id="mOut" data-v="0">Rp0</b></div>
       </div>
+      </div>
+    </div>
+    <div class="wallet">
       <div class="actions">
         <button class="act" data-add="masuk"><i class="i-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></i>Masuk</button>
         <button class="act" data-add="keluar"><i class="i-out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></i>Keluar</button>
