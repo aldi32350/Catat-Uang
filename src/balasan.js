@@ -1,6 +1,6 @@
 // Logika balasan, terpisah dari WhatsApp supaya mudah diuji.
 import * as db from './db.js';
-import { uraiPesan, uraiHutang, bacaJumlah } from './parser.js';
+import { uraiPesan, uraiHutang, uraiTabungan, bacaJumlah } from './parser.js';
 
 export const rupiah = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
 
@@ -47,6 +47,12 @@ export const BANTUAN = `📒 *Catat Keuangan*
 • bayar hutang budi 100rb  (atau *lunas*)
 • terima piutang andi 50rb
 • *hutang piutang* — lihat daftar & sisa
+
+*Tabungan:*
+• nabung 100rb umroh
+• target umroh 10jt
+• tarik tabungan umroh 50rb  (atau *semua*)
+• *tabungan* — lihat semua & progresnya
 
 *Foto struk:* kirim foto struk/nota/bukti transfer, bot membacanya lalu minta konfirmasi *ya* / *batal*.
 
@@ -145,8 +151,11 @@ function infoTempo(iso, sekarang = new Date()) {
 
 function barisHutang(uid) {
   const t = db.totalHutang(uid);
-  if (!t.hutang && !t.piutang) return '';
-  return `\n\n📕 Hutang saya: ${rupiah(t.hutang)}\n📗 Piutang (uang saya di orang): ${rupiah(t.piutang)}`;
+  const tab = db.totalTabungan(uid);
+  let teks = '';
+  if (tab) teks += `\n🐷 Tabungan: ${rupiah(tab)}`;
+  if (t.hutang || t.piutang) teks += `\n📕 Hutang saya: ${rupiah(t.hutang)}\n📗 Piutang (uang saya di orang): ${rupiah(t.piutang)}`;
+  return teks ? '\n' + teks : '';
 }
 
 function daftarHutangTeks(filter, uid) {
@@ -201,10 +210,69 @@ function prosesHutang(h, pengirim, uid) {
   ].filter((x) => x !== null).join('\n');
 }
 
+// ---------- Tabungan ----------
+function batang(persen) {
+  const isi = Math.round((persen || 0) / 10);
+  return '▓'.repeat(isi) + '░'.repeat(10 - isi);
+}
+function barisTabungan(b) {
+  return b.target
+    ? `${b.ikon} *${b.nama}*: ${rupiah(b.terkumpul)} / ${rupiah(b.target)} (${b.persen}%)\n   ${batang(b.persen)}${b.tercapai ? ' 🎉' : ''}`
+    : `${b.ikon} *${b.nama}*: ${rupiah(b.terkumpul)}`;
+}
+
+function prosesTabungan(h, uid) {
+  if (h.jenis === 'tabungan-daftar') {
+    const list = db.daftarTabungan(uid);
+    if (!list.length) return '🐷 Belum ada tabungan.\n\nMulai dengan: *nabung 100rb umroh*\nAtur target: *target umroh 10jt*';
+    const total = list.reduce((s, b) => s + b.terkumpul, 0);
+    return `🐷 *Tabungan* — total ${rupiah(total)}\n\n` + list.map(barisTabungan).join('\n') +
+      `\n\n💰 Saldo dompet: *${rupiah(db.saldo(uid).saldo)}*\nNabung: *nabung 100rb umroh* · Tarik: *tarik tabungan umroh 50rb*`;
+  }
+
+  let b = db.cariTabungan(h.nama, uid);
+
+  if (h.jenis === 'tabungan-target') {
+    b = b ? db.ubahTabungan(b.id, uid, { target: h.target }) : db.buatTabungan({ uid, nama: h.nama, target: h.target });
+    return `🎯 Target *${b.nama}*: ${rupiah(b.target)}\n${barisTabungan(b)}`;
+  }
+
+  if (h.jenis === 'tabungan-setor') {
+    const baru = !b;
+    if (!b) b = db.buatTabungan({ uid, nama: h.nama });
+    const r = db.setorTabungan({ uid, id: b.id, jumlah: h.jumlah, pengirim: 'wa' });
+    const saldo = db.saldo(uid).saldo;
+    return [
+      `🐷 Nabung *${rupiah(r.jumlah)}* ke *${r.tabungan.nama}*${baru ? ' (tabungan baru)' : ''}`,
+      barisTabungan(r.tabungan),
+      r.tabungan.tercapai ? '🎉 Target tercapai!' : (r.tabungan.target ? `Kurang ${rupiah(r.tabungan.target - r.tabungan.terkumpul)} lagi` : null),
+      '',
+      `💰 Saldo dompet: *${rupiah(saldo)}*`,
+      saldo < 0 ? '⚠️ Saldo dompet jadi minus, cek lagi ya.' : null,
+      baru && !r.tabungan.target ? `\nAtur target: *target ${r.tabungan.nama.toLowerCase()} 10jt*` : null,
+    ].filter((x) => x !== null).join('\n');
+  }
+
+  // tabungan-tarik
+  if (!b) {
+    const ada = db.daftarTabungan(uid).map((x) => x.nama).join(', ');
+    return `🤔 Tabungan "${h.nama}" tidak ditemukan.` + (ada ? `\nTabunganmu: ${ada}` : '');
+  }
+  if (h.jumlah === undefined) {
+    return `Isi tabungan ${b.nama}: *${rupiah(b.terkumpul)}*\n\nBerapa yang ditarik? Contoh: *tarik tabungan ${b.nama.toLowerCase()} 100rb*, atau *... semua*.`;
+  }
+  const r = db.tarikTabungan({ uid, id: b.id, jumlah: h.jumlah, pengirim: 'wa' });
+  if (!r.ok) return `🤔 ${r.alasan}`;
+  return `💸 Tarik *${rupiah(r.jumlah)}* dari *${r.tabungan.nama}*\nSisa tabungan: ${rupiah(r.tabungan.terkumpul)}\n\n💰 Saldo dompet: *${rupiah(db.saldo(uid).saldo)}*`;
+}
+
 /** Mengembalikan teks balasan, atau null bila pesan bukan untuk bot. */
 export function prosesPesan(teks, pengirim, uid) {
   const konfirmasi = prosesKonfirmasi(teks, pengirim, uid);
   if (konfirmasi) return konfirmasi;
+
+  const tb = uraiTabungan(teks);
+  if (tb) return prosesTabungan(tb, uid);
 
   const hh = uraiHutang(teks);
   if (hh) return prosesHutang(hh, pengirim, uid);

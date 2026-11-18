@@ -57,6 +57,24 @@ tambahKolom('transaksi', 'hutang_id', 'INTEGER');
 tambahKolom('transaksi', 'hutang_peran', 'TEXT'); // 'pokok' | 'bayar'
 tambahKolom('transaksi', 'user_id', 'INTEGER');
 tambahKolom('hutang', 'user_id', 'INTEGER');
+tambahKolom('transaksi', 'tabungan_id', 'INTEGER');
+db.exec(`
+  CREATE TABLE IF NOT EXISTS wa_perangkat (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    nomor   TEXT,
+    dibuat  TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+  CREATE TABLE IF NOT EXISTS tabungan (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    nama    TEXT    NOT NULL,
+    target  INTEGER,
+    tenggat TEXT,
+    ikon    TEXT    NOT NULL DEFAULT '🐷',
+    dibuat  TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+`);
 db.exec('CREATE INDEX IF NOT EXISTS idx_transaksi_user ON transaksi(user_id, dibuat)');
 
 function dalamTransaksi(fn) {
@@ -76,7 +94,7 @@ function cocokPassword(pw, simpanan) {
   const b = scryptSync(pw, Buffer.from(salt, 'hex'), 64);
   return a.length === b.length && timingSafeEqual(a, b);
 }
-const publik = (u) => u && ({ id: u.id, username: u.username, nama: u.nama, role: u.role, nomor_lain: u.nomor_lain, dibuat: u.dibuat });
+const publik = (u) => u && ({ id: u.id, username: u.username, nama: u.nama, role: u.role, dibuat: u.dibuat });
 
 export const jumlahUser = () => db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
 export const ambilUser = (id) => publik(db.prepare('SELECT * FROM users WHERE id = ?').get(id));
@@ -118,17 +136,13 @@ export function gantiPassword(id, password) {
   db.prepare('DELETE FROM sesi WHERE user_id = ?').run(id); // keluarkan dari semua perangkat
 }
 
-export function setNomorLain(id, nomor) {
-  const bersih = String(nomor || '').split(/[,;\n]+/).map((n) => n.replace(/\D/g, '').replace(/^0/, '62')).filter((n) => n.length >= 9).join(',');
-  db.prepare('UPDATE users SET nomor_lain = ? WHERE id = ?').run(bersih, id);
-  return bersih;
-}
-
 /** Menghapus user beserta seluruh datanya. */
 export function hapusUser(id) {
   return dalamTransaksi(() => {
     db.prepare('DELETE FROM transaksi WHERE user_id = ?').run(id);
     db.prepare('DELETE FROM hutang WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM tabungan WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM wa_perangkat WHERE user_id = ?').run(id);
     db.prepare('DELETE FROM sesi WHERE user_id = ?').run(id);
     return db.prepare('DELETE FROM users WHERE id = ?').run(id).changes > 0;
   });
@@ -150,10 +164,10 @@ export const hapusSesi = (token) => db.prepare('DELETE FROM sesi WHERE token = ?
 
 // ============================ Transaksi (per user) ============================
 
-export function tambah({ uid, tipe, jumlah, keterangan = '', kategori = 'Lainnya', pengirim = 'web', dibuat, hutang_id = null, hutang_peran = null }) {
-  const r = db.prepare(`INSERT INTO transaksi (user_id, tipe, jumlah, keterangan, kategori, pengirim, dibuat, hutang_id, hutang_peran)
-    VALUES (?,?,?,?,?,?, COALESCE(?, datetime('now','localtime')), ?, ?)`)
-    .run(uid, tipe, jumlah, keterangan, kategori, pengirim, dibuat ?? null, hutang_id, hutang_peran);
+export function tambah({ uid, tipe, jumlah, keterangan = '', kategori = 'Lainnya', pengirim = 'web', dibuat, hutang_id = null, hutang_peran = null, tabungan_id = null }) {
+  const r = db.prepare(`INSERT INTO transaksi (user_id, tipe, jumlah, keterangan, kategori, pengirim, dibuat, hutang_id, hutang_peran, tabungan_id)
+    VALUES (?,?,?,?,?,?, COALESCE(?, datetime('now','localtime')), ?, ?, ?)`)
+    .run(uid, tipe, jumlah, keterangan, kategori, pengirim, dibuat ?? null, hutang_id, hutang_peran, tabungan_id);
   return ambil(Number(r.lastInsertRowid), uid);
 }
 
@@ -189,10 +203,10 @@ export function ringkasan(dari, sampai, uid) {
     SELECT COALESCE(SUM(CASE WHEN tipe='masuk'  THEN jumlah END),0) AS masuk,
            COALESCE(SUM(CASE WHEN tipe='keluar' THEN jumlah END),0) AS keluar,
            COUNT(*) AS jumlahTransaksi
-    FROM transaksi WHERE user_id = ? AND dibuat >= ? AND dibuat < ? AND hutang_id IS NULL`).get(uid, dari, sampai);
+    FROM transaksi WHERE user_id = ? AND dibuat >= ? AND dibuat < ? AND hutang_id IS NULL AND tabungan_id IS NULL`).get(uid, dari, sampai);
   const perKategori = db.prepare(`
     SELECT kategori, SUM(jumlah) AS total FROM transaksi
-    WHERE user_id = ? AND tipe='keluar' AND dibuat >= ? AND dibuat < ? AND hutang_id IS NULL
+    WHERE user_id = ? AND tipe='keluar' AND dibuat >= ? AND dibuat < ? AND hutang_id IS NULL AND tabungan_id IS NULL
     GROUP BY kategori ORDER BY total DESC`).all(uid, dari, sampai);
   return { ...r, selisih: r.masuk - r.keluar, perKategori };
 }
@@ -313,3 +327,93 @@ export function hapusHutang(id, uid) {
     return db.prepare('DELETE FROM hutang WHERE id = ? AND user_id = ?').run(id, uid).changes > 0;
   });
 }
+
+// ============================ Tabungan (per user) ============================
+// Setor = uang pindah dari saldo dompet ke tabungan (transaksi "keluar" kategori Tabungan).
+// Tarik = uang kembali ke saldo dompet (transaksi "masuk" kategori Tarik Tabungan).
+// Keduanya tidak dihitung sebagai pemasukan/pengeluaran di laporan.
+
+const SQL_TABUNGAN = `
+  SELECT b.*,
+    COALESCE((SELECT SUM(CASE WHEN t.tipe = 'keluar' THEN t.jumlah ELSE -t.jumlah END)
+              FROM transaksi t WHERE t.tabungan_id = b.id), 0) AS terkumpul
+  FROM tabungan b`;
+const lengkapiTab = (b) => b && ({ ...b, persen: b.target ? Math.min(100, Math.round((b.terkumpul / b.target) * 100)) : null,
+  tercapai: Boolean(b.target && b.terkumpul >= b.target) });
+
+export function daftarTabungan(uid) {
+  return db.prepare(SQL_TABUNGAN + ' WHERE b.user_id = ? ORDER BY b.dibuat').all(uid).map(lengkapiTab);
+}
+export function ambilTabungan(id, uid) {
+  const b = lengkapiTab(db.prepare(SQL_TABUNGAN + ' WHERE b.id = ? AND b.user_id = ?').get(id, uid));
+  if (b) b.riwayat = db.prepare('SELECT * FROM transaksi WHERE tabungan_id = ? ORDER BY dibuat DESC, id DESC').all(id);
+  return b;
+}
+export const totalTabungan = (uid) => daftarTabungan(uid).reduce((s, b) => s + b.terkumpul, 0);
+
+export function cariTabungan(nama, uid) {
+  const k = kunciNama(nama || '');
+  return daftarTabungan(uid).find((b) => kunciNama(b.nama) === k) || null;
+}
+
+export function buatTabungan({ uid, nama, target = null, tenggat = null, ikon = '🐷' }) {
+  nama = String(nama || '').trim().slice(0, 40);
+  if (!nama) throw new Error('Nama tabungan wajib diisi');
+  if (cariTabungan(nama, uid)) throw new Error(`Tabungan "${nama}" sudah ada`);
+  const r = db.prepare('INSERT INTO tabungan (user_id, nama, target, tenggat, ikon) VALUES (?,?,?,?,?)')
+    .run(uid, nama, target > 0 ? Math.round(target) : null, tenggat || null, ikon || '🐷');
+  return ambilTabungan(Number(r.lastInsertRowid), uid);
+}
+
+export function ubahTabungan(id, uid, { nama, target, tenggat, ikon }) {
+  const b = ambilTabungan(id, uid);
+  if (!b) return null;
+  db.prepare('UPDATE tabungan SET nama = ?, target = ?, tenggat = ?, ikon = ? WHERE id = ? AND user_id = ?').run(
+    nama !== undefined ? String(nama).trim().slice(0, 40) || b.nama : b.nama,
+    target !== undefined ? (target > 0 ? Math.round(target) : null) : b.target,
+    tenggat !== undefined ? tenggat || null : b.tenggat,
+    ikon !== undefined ? ikon || '🐷' : b.ikon, id, uid);
+  return ambilTabungan(id, uid);
+}
+
+/** Setor ke tabungan. Saldo dompet berkurang. */
+export function setorTabungan({ uid, id, jumlah, pengirim = 'web' }) {
+  const b = ambilTabungan(id, uid);
+  if (!b) return { ok: false, alasan: 'Tabungan tidak ditemukan.' };
+  if (!(jumlah > 0)) return { ok: false, alasan: 'Jumlah tidak valid.' };
+  tambah({ uid, tipe: 'keluar', jumlah, kategori: 'Tabungan', keterangan: `Nabung ke ${b.nama}`, pengirim, tabungan_id: id });
+  return { ok: true, jumlah, tabungan: ambilTabungan(id, uid) };
+}
+
+/** Tarik dari tabungan (jumlah null = semua). Saldo dompet bertambah. */
+export function tarikTabungan({ uid, id, jumlah = null, pengirim = 'web' }) {
+  const b = ambilTabungan(id, uid);
+  if (!b) return { ok: false, alasan: 'Tabungan tidak ditemukan.' };
+  if (b.terkumpul <= 0) return { ok: false, alasan: `Tabungan ${b.nama} masih kosong.` };
+  const tarik = jumlah == null ? b.terkumpul : jumlah;
+  if (!(tarik > 0)) return { ok: false, alasan: 'Jumlah tidak valid.' };
+  if (tarik > b.terkumpul) return { ok: false, alasan: `Isi tabungan ${b.nama} hanya Rp${b.terkumpul.toLocaleString('id-ID')}.` };
+  tambah({ uid, tipe: 'masuk', jumlah: tarik, kategori: 'Tarik Tabungan', keterangan: `Tarik dari ${b.nama}`, pengirim, tabungan_id: id });
+  return { ok: true, jumlah: tarik, tabungan: ambilTabungan(id, uid) };
+}
+
+/** Hapus tabungan beserta riwayatnya; uang yang terkumpul kembali ke saldo dompet. */
+export function hapusTabungan(id, uid) {
+  return dalamTransaksi(() => {
+    if (!db.prepare('SELECT 1 FROM tabungan WHERE id = ? AND user_id = ?').get(id, uid)) return false;
+    db.prepare('DELETE FROM transaksi WHERE tabungan_id = ? AND user_id = ?').run(id, uid);
+    return db.prepare('DELETE FROM tabungan WHERE id = ? AND user_id = ?').run(id, uid).changes > 0;
+  });
+}
+
+// ============================ Perangkat WhatsApp (banyak nomor per user) ============================
+
+export const daftarPerangkat = (uid) => db.prepare('SELECT * FROM wa_perangkat WHERE user_id = ? ORDER BY id').all(uid);
+export const semuaPerangkat = () => db.prepare('SELECT * FROM wa_perangkat ORDER BY id').all();
+export const ambilPerangkat = (id) => db.prepare('SELECT * FROM wa_perangkat WHERE id = ?').get(id);
+export function buatPerangkat(uid) {
+  const r = db.prepare('INSERT INTO wa_perangkat (user_id) VALUES (?)').run(uid);
+  return ambilPerangkat(Number(r.lastInsertRowid));
+}
+export const setNomorPerangkat = (id, nomor) => db.prepare('UPDATE wa_perangkat SET nomor = ? WHERE id = ?').run(nomor, id);
+export const hapusPerangkat = (id) => db.prepare('DELETE FROM wa_perangkat WHERE id = ?').run(id).changes > 0;

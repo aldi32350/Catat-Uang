@@ -132,6 +132,54 @@ export function uraiHutang(pesan) {
   return { jenis: 'hutang-baru', tipe, nama, jumlah: j.nilai, keterangan, tempo };
 }
 
+// ======================= Tabungan =======================
+
+function namaTabungan(teks) {
+  return judul(teks.replace(/\s+/g, ' ').trim()
+    .replace(/^(ke|untuk|buat|utk|di|dari|tabungan|celengan)\s+/i, '')
+    .replace(/^(ke|untuk|buat|utk|di|dari)\s+/i, '').trim().toLowerCase());
+}
+
+/**
+ * Hasil:
+ *  { jenis: 'tabungan-daftar' }
+ *  { jenis: 'tabungan-setor', nama, jumlah }
+ *  { jenis: 'tabungan-tarik', nama, jumlah: number|null (null = semua) }
+ *  { jenis: 'tabungan-target', nama, target }
+ */
+export function uraiTabungan(pesan) {
+  const teks = (pesan || '').trim().replace(/\s+/g, ' ').replace(/^[/!.#]/, '');
+  const k = teks.toLowerCase();
+  if (/^(tabungan|celengan|tabunganku|daftar tabungan|cek tabungan|lihat tabungan)$/.test(k)) return { jenis: 'tabungan-daftar' };
+
+  let m = k.match(/^(?:tarik|ambil)(?: uang)? (?:tabungan|celengan) ?(.*)$/);
+  if (m) {
+    let sisa = m[1];
+    const semua = /\b(semua|semuanya|habis)\b/.test(sisa);
+    sisa = sisa.replace(/\b(semua|semuanya|habis)\b/g, ' ');
+    const j = bacaJumlah(sisa);
+    if (j) sisa = sisa.replace(j.cocok, ' ');
+    if (!j && !semua) return { jenis: 'tabungan-tarik', nama: namaTabungan(sisa), jumlah: undefined };
+    return { jenis: 'tabungan-tarik', nama: namaTabungan(sisa), jumlah: j ? j.nilai : null };
+  }
+
+  m = k.match(/^target (?:tabungan |celengan )?(.+)$/);
+  if (m) {
+    const j = bacaJumlah(m[1]);
+    if (!j) return null;
+    return { jenis: 'tabungan-target', nama: namaTabungan(m[1].replace(j.cocok, ' ')), target: j.nilai };
+  }
+
+  m = k.match(/^(?:nabung|menabung|tabung|setor tabungan|setor celengan|isi tabungan|isi celengan) (.+)$/);
+  if (m) {
+    const asli = teks.split(' ').slice(k.startsWith('setor ') || k.startsWith('isi ') ? 2 : 1).join(' ');
+    const j = bacaJumlah(asli);
+    if (!j) return null;
+    return { jenis: 'tabungan-setor', nama: namaTabungan(asli.replace(j.cocok, ' ')) || 'Tabungan', jumlah: j.nilai };
+  }
+  return null;
+}
+
 /**
  * Hasil:
  *  { jenis: 'transaksi', tipe, jumlah, keterangan, kategori }

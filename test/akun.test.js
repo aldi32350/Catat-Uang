@@ -57,7 +57,32 @@ test('data antar user terpisah (transaksi, hutang, WA)', () => {
   assert.equal(db.daftarHutang({ uid: b }).length, 0);
 });
 
-test('nomor lain dibersihkan & 08 → 628', () => {
-  const a = db.cekLogin('aldi', 'baru123').id;
-  assert.equal(db.setNomorLain(a, '0812-3456-7890, +62 811 222 333, abc'), '6281234567890,62811222333');
+
+test('tabungan: setor, tarik, target, tidak masuk laporan, terpisah per user', () => {
+  const u = db.buatUser({ username: 'tabung', nama: 'Tabung', password: 'rahasia3' }).id;
+  db.tambah({ uid: u, tipe: 'masuk', jumlah: 1000000, keterangan: 'gaji' });
+  const b = db.buatTabungan({ uid: u, nama: 'Umroh', target: 500000 });
+  assert.equal(db.setorTabungan({ uid: u, id: b.id, jumlah: 300000 }).tabungan.persen, 60);
+  assert.equal(db.saldo(u).saldo, 700000, 'saldo dompet berkurang');
+  assert.equal(db.tarikTabungan({ uid: u, id: b.id, jumlah: 999999 }).ok, false, 'tidak bisa tarik melebihi isi');
+  assert.equal(db.tarikTabungan({ uid: u, id: b.id, jumlah: 100000 }).tabungan.terkumpul, 200000);
+  assert.equal(db.totalTabungan(u), 200000);
+  const r = db.ringkasan('2000-01-01 00:00:00', '2100-01-01 00:00:00', u);
+  assert.equal(r.keluar, 0, 'nabung bukan pengeluaran');
+  assert.equal(r.masuk, 1000000, 'tarik tabungan bukan pemasukan');
+  assert.throws(() => db.buatTabungan({ uid: u, nama: 'umroh' }), /sudah ada/);
+  const lain = db.cekLogin('aldi', 'baru123').id;
+  assert.equal(db.ambilTabungan(b.id, lain), undefined, 'user lain tidak bisa melihat');
+  db.hapusTabungan(b.id, u);
+  assert.equal(db.saldo(u).saldo, 1000000, 'hapus tabungan: isi kembali ke saldo');
+});
+
+test('perangkat WA milik user, ikut terhapus bersama user', () => {
+  const u = db.buatUser({ username: 'wauser', nama: 'WA', password: 'rahasia4' }).id;
+  const p1 = db.buatPerangkat(u); db.buatPerangkat(u);
+  db.setNomorPerangkat(p1.id, '6281111');
+  assert.equal(db.daftarPerangkat(u).length, 2);
+  assert.equal(db.ambilPerangkat(p1.id).nomor, '6281111');
+  db.hapusUser(u);
+  assert.equal(db.daftarPerangkat(u).length, 0);
 });

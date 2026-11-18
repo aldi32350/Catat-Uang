@@ -89,6 +89,9 @@
   .i-out { background: var(--red-bg); color: var(--red); }
   .i-rep { background: #e5efff; color: var(--brand); }
   .i-dl { background: #fff3dc; color: #c67a00; }
+  .i-tab { background: #ffe9f1; font-size: 22px; }
+  html[data-theme="dark"] .i-tab { background: #3a1d2a; }
+  .wa-logo { width: 40px; height: 40px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,.12)); }
   html[data-theme="dark"] .i-rep { background: #13294a; color: #6fb0ff; }html[data-theme="dark"] .i-dl { background: #33280f; color: #ffb84d; }
 
   /* ---------- konten ---------- */
@@ -172,6 +175,43 @@
   .user-row .mid small { color: var(--muted); font-size: 13px; }
   .badge.adm { background: #e5efff; color: var(--brand); }
   html[data-theme="dark"] .badge.adm { background: #13294a; color: #6fb0ff; }
+
+  /* ---------- whatsapp ---------- */
+  .wa-card { padding: 14px 16px; margin-bottom: 12px; }
+  .wa-head { display: flex; gap: 12px; align-items: center; }
+  .wa-head .ic { font-size: 22px; }
+  .wa-head b { display: block; font-size: 16px; }
+  .wa-head small { color: var(--muted); font-size: 13px; }
+  .wa-sub { color: var(--muted); font-size: 13.5px; margin: 10px 0; }
+  .wa-btns { display: flex; gap: 8px; }
+  .wa-btn { flex: 1; padding: 12px; border-radius: 14px; font-weight: 700; }
+  .primary-sm { background: var(--brand); color: #fff; }
+  .danger-sm { background: var(--red-bg); color: var(--red); }
+
+  /* ---------- tabungan ---------- */
+  .tab-tile { display: flex; align-items: center; gap: 12px; width: 100%; }
+  .tab-tile small { display: block; }
+  .tab-em { width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; font-size: 24px; background: #ffe9f1; flex: none; }
+  html[data-theme="dark"] .tab-em { background: #3a1d2a; }
+  .tab-hero { background: linear-gradient(135deg, #ff7eb3, #ff9a6b); color: #fff; border-radius: 20px; padding: 18px; box-shadow: 0 10px 26px rgba(255,110,150,.3); }
+  .tab-hero small { opacity: .9; font-weight: 600; }
+  .tab-total { font-size: 30px; font-weight: 800; margin: 2px 0; }
+  .tab-card { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; background: var(--card); border-radius: 18px;
+    box-shadow: var(--shadow); padding: 14px; margin-bottom: 10px; }
+  .tab-card .ic { font-size: 24px; width: 48px; height: 48px; border-radius: 16px; background: #ffe9f1; }
+  html[data-theme="dark"] .tab-card .ic { background: #3a1d2a; }
+  .tab-card .mid { flex: 1; min-width: 0; }
+  .tab-card .mid b { display: block; }
+  .tab-card .mid small { color: var(--muted); font-size: 13px; }
+  .tab-card .ptrack i, .ptrack.big i { background: linear-gradient(90deg, #ff7eb3, #ff9a6b); }
+  .tab-card .rt { text-align: right; flex: none; font-weight: 800; }
+  .tab-card .rt small { display: block; font-weight: 600; color: var(--muted); font-size: 12px; }
+  .ptrack.big { height: 10px; margin: 14px 0 0; }
+  .tab-big-ic { width: 72px; height: 72px; border-radius: 22px; background: #ffe9f1; display: grid; place-items: center; font-size: 38px; margin: 0 auto 8px; }
+  html[data-theme="dark"] .tab-big-ic { background: #3a1d2a; }
+  .ikon-pilih { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .ikon-pilih button { font-size: 22px; padding: 8px 0; border-radius: 12px; background: var(--chip); }
+  .ikon-pilih button.on { outline: 2px solid var(--brand); background: var(--card); }
 
   /* ---------- hutang & piutang ---------- */
   .debt-sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -341,16 +381,24 @@
       <div class="actions">
         <button class="act" data-add="masuk"><i class="i-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></i>Masuk</button>
         <button class="act" data-add="keluar"><i class="i-out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></i>Keluar</button>
-        <button class="act" data-go="report"><i class="i-rep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></i>Laporan</button>
-        <button class="act" id="dlBtn"><i class="i-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></i>Unduh</button>
+        <button class="act" data-go="debt"><i class="i-rep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 11a4 4 0 1 0-8 0"/><circle cx="12" cy="6" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h3"/><path d="M14 17h7M18 14l3 3-3 3"/></svg></i>Hutang</button>
+        <button class="act" data-go="tab"><i class="i-tab">🐷</i>Tabungan</button>
       </div>
     </div>
 
     <main>
       <div class="sec">
         <button class="promo" data-go="wa" style="width:100%;text-align:left">
-          <span class="em">💬</span>
+          <span class="em"><img src="/wa.svg" alt="WhatsApp" class="wa-logo"></span>
           <span><b>Catat lewat WhatsApp</b><small>Ketik "keluar 25rb makan" ke chat dirimu sendiri</small></span>
+        </button>
+      </div>
+      <div class="sec">
+        <div class="sec-head"><h2>Tabungan</h2><button class="link" data-go="tab">Kelola</button></div>
+        <button class="debt-tile tab-tile" data-go="tab">
+          <span class="tab-em">🐷</span>
+          <span style="flex:1"><small>Total tabungan</small><b id="hTab">Rp0</b><em id="hTabN">Belum ada tabungan</em></span>
+          <span style="color:var(--muted);font-size:20px">›</span>
         </button>
       </div>
       <div class="sec">
@@ -364,6 +412,21 @@
         <div class="sec-head"><h2>Transaksi terakhir</h2><button class="link" data-go="history">Lihat semua</button></div>
         <div class="card" id="recent"></div>
       </div>
+    </main>
+  </section>
+
+  <!-- ============ TABUNGAN ============ -->
+  <section id="page-tab" hidden>
+    <main>
+      <div class="sec" style="margin-top:18px"><h2 style="margin:0;font-size:22px">Tabungan</h2></div>
+      <div class="sec tab-hero">
+        <small>Total tabungan</small>
+        <div class="tab-total" id="tTotal">Rp0</div>
+        <small id="tSaldo">Saldo dompet: Rp0</small>
+      </div>
+      <div class="sec" id="tabList"></div>
+      <button class="add-debt" id="addTabBtn">＋ Buat tabungan baru</button>
+      <p class="note-small">Lewat WA: <b>nabung 100rb umroh</b> · <b>target umroh 10jt</b> · <b>tarik tabungan umroh 50rb</b></p>
     </main>
   </section>
 
@@ -427,20 +490,10 @@
   <!-- ============ WHATSAPP ============ -->
   <section id="page-wa" hidden>
     <main>
-      <div class="sec" style="margin-top:18px"><h2 style="margin:0;font-size:22px">WhatsApp</h2></div>
-      <div class="sec card status-big"><span class="ic" id="waIc">⏳</span><div><b id="waTitle">Memeriksa…</b><br><small style="color:var(--muted)" id="waSub"></small></div></div>
-      <div class="sec card qr-card" id="qrBox" hidden>
-        <b>Scan untuk menghubungkan</b>
-        <p style="color:var(--muted);font-size:14px;margin:6px 0 14px">WhatsApp di HP → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b></p>
-        <img id="qr" alt="Kode QR WhatsApp">
-      </div>
-      <button class="add-debt" id="waConnect" hidden>📱 Hubungkan WhatsApp</button>
-      <button class="danger" id="waDisconnect" hidden>⛔ Putuskan WhatsApp</button>
-      <div class="sec card" style="padding:14px 16px">
-        <b>Nomor lain yang boleh mencatat</b>
-        <p style="color:var(--muted);font-size:13.5px;margin:4px 0 10px">Mis. nomor pasangan. Mereka cukup chat ke nomor WA-mu yang tertaut. Pisahkan dengan koma.</p>
-        <div class="pay-row" style="margin-top:0"><input id="waOther" inputmode="tel" placeholder="6281234567890"><button id="waOtherSave">Simpan</button></div>
-      </div>
+      <div class="sec" style="margin-top:18px"><h2 style="margin:0;font-size:22px;display:flex;align-items:center;gap:10px"><img src="/wa.svg" alt="" style="width:32px;height:32px">WhatsApp</h2></div>
+      <p style="color:var(--muted);font-size:14px;margin:6px 0 0">Tautkan satu atau lebih nomor WhatsApp. Kirim chat ke <b>dirimu sendiri</b> dari nomor mana pun, semuanya masuk ke buku keuanganmu.</p>
+      <div class="sec" id="waList"></div>
+      <button class="add-debt" id="waAdd">＋ Tambah nomor WhatsApp</button>
       <div class="sec">
         <div class="sec-head"><h2>Cara pakai di chat</h2></div>
         <div class="card">
@@ -462,7 +515,7 @@
     <button data-go="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Beranda</button>
     <button data-go="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Riwayat</button>
     <button class="fab" data-add="keluar" aria-label="Catat transaksi"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><em>Catat</em></button>
-    <button data-go="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.3A9 9 0 0 1 20.7 9H15z"/></svg>Laporan</button>
+    <button data-go="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9.5c1.2.4 2 1.4 2 2.5v1.5h-2.2a7 7 0 0 1-2.3 2.8V19h-3v-1.6a8 8 0 0 1-3 0V19h-3v-2.7A6.5 6.5 0 0 1 4 11c0-3.6 3.4-6.5 7.5-6.5 1.6 0 3 .4 4.2 1.1L18.5 4v3.2"/><circle cx="15" cy="10" r=".8" fill="currentColor"/></svg>Tabungan</button>
     <button data-go="debt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 11a4 4 0 1 0-8 0"/><circle cx="12" cy="6" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h3"/><path d="M14 17h7M18 14l3 3-3 3"/></svg>Hutang</button>
   </nav>
 </div>
@@ -537,6 +590,39 @@
   <p class="note-small">Menghapus catatan juga menghapus transaksi pinjaman & pembayarannya dari saldo.</p>
 </div>
 
+<!-- ============ LEMBAR: TABUNGAN BARU ============ -->
+<div class="sheet" id="tabAddSheet" role="dialog" aria-label="Buat tabungan">
+  <div class="grab"></div>
+  <h3>Buat tabungan</h3>
+  <div class="ikon-pilih" id="tIkonPilih">
+    <button data-ikon="🐷" class="on">🐷</button><button data-ikon="🕋">🕋</button><button data-ikon="🏠">🏠</button><button data-ikon="🏍️">🏍️</button>
+    <button data-ikon="🚗">🚗</button><button data-ikon="🎓">🎓</button><button data-ikon="💍">💍</button><button data-ikon="✈️">✈️</button>
+    <button data-ikon="🆘">🆘</button><button data-ikon="📱">📱</button><button data-ikon="👶">👶</button><button data-ikon="🎁">🎁</button>
+  </div>
+  <label class="field" style="margin-top:12px"><small>Nama tabungan</small><input id="tNama" maxlength="40" placeholder="mis. Umroh, Dana Darurat"></label>
+  <label class="field" style="margin-top:10px"><small>Target (opsional)</small><input id="tTarget" inputmode="numeric" placeholder="mis. 10.000.000"></label>
+  <label class="field" style="margin-top:10px"><small>Ingin tercapai tanggal (opsional)</small><input id="tTenggat" type="date"></label>
+  <button class="primary" id="tSave" disabled>Buat tabungan</button>
+</div>
+
+<!-- ============ LEMBAR: DETAIL TABUNGAN ============ -->
+<div class="sheet" id="tabSheet" role="dialog" aria-label="Detail tabungan">
+  <div class="grab"></div>
+  <div class="tab-big-ic" id="tdIc">🐷</div>
+  <div style="text-align:center;font-weight:800;font-size:18px" id="tdNama"></div>
+  <div class="detail-amt" id="tdIsi"></div>
+  <div style="text-align:center;color:var(--muted);font-size:14px" id="tdTarget"></div>
+  <div class="ptrack big"><i id="tdBar"></i></div>
+  <div style="text-align:center;color:var(--muted);font-size:13px;margin-top:6px" id="tdHint"></div>
+  <div class="pay-row"><input id="tdJumlah" inputmode="numeric" placeholder="Jumlah, mis. 100.000"><button id="tdSetor">Setor</button></div>
+  <button class="ghost" id="tdTarik" style="background:var(--red-bg);color:var(--red)">Tarik ke saldo</button>
+  <p class="note-small">Setor: uang pindah dari saldo dompet ke tabungan. Tarik: uang kembali ke saldo.</p>
+  <label class="field" style="margin-top:12px"><small>Ubah target</small>
+    <span class="pw"><input id="tdTargetIn" inputmode="numeric" placeholder="Tanpa target"><button type="button" class="link" id="tdTargetSave" style="padding:4px 6px">Simpan</button></span></label>
+  <div class="hist" id="tdHist"></div>
+  <button class="danger" id="tdDel">Hapus tabungan</button>
+</div>
+
 <!-- ============ LEMBAR: AKUN SAYA ============ -->
 <div class="sheet" id="meSheet" role="dialog" aria-label="Akun saya">
   <div class="grab"></div>
@@ -550,7 +636,8 @@
   </div>
   <div class="menu">
     <button id="goAdmin" hidden>👥 <span>Kelola user</span><i>›</i></button>
-    <button data-go="wa" data-close>💬 <span>WhatsApp saya</span><i>›</i></button>
+    <button data-go="report" data-close>📊 <span>Laporan</span><i>›</i></button>
+    <button data-go="wa" data-close><img src="/wa.svg" alt="" style="width:20px;height:20px"> <span>WhatsApp saya</span><i>›</i></button>
     <button id="pwBtn">🔑 <span>Ganti password</span><i>›</i></button>
   </div>
   <button class="danger" id="logoutBtn">Keluar</button>
@@ -594,7 +681,7 @@ const rp = (n) => (n < 0 ? '−Rp' : 'Rp') + fmt(Math.abs(n));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ICON = { 'Makan & Minum': '🍜', 'Transportasi': '🛵', 'Belanja': '🛒', 'Tagihan': '💡', 'Kesehatan': '💊',
   'Pendidikan': '📚', 'Sosial & Ibadah': '🤲', 'Gaji': '💼', 'Usaha': '🏪', 'Pemasukan Lain': '💰', 'Lainnya': '🧾',
-  'Hutang': '📕', 'Bayar Hutang': '📕', 'Piutang': '📗', 'Terima Piutang': '📗' };
+  'Hutang': '📕', 'Bayar Hutang': '📕', 'Piutang': '📗', 'Terima Piutang': '📗', 'Tabungan': '🐷', 'Tarik Tabungan': '🐷' };
 const ic = (k) => ICON[k] || '🧾';
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -689,49 +776,66 @@ async function loadMonth() {
       : `<div class="empty"><span class="em">📊</span>Belum ada pengeluaran di bulan ini.</div>`;
   }
 }
-let waOtherDirty = false;
+// ---------- WhatsApp: banyak nomor per user ----------
+const WA_T = {
+  terhubung: ['✅', 'Terhubung', 'Kirim chat ke dirimu sendiri dari nomor ini untuk mencatat'],
+  qr: ['📱', 'Menunggu scan QR', 'Buka WhatsApp di HP nomor ini → Perangkat tertaut → Tautkan perangkat, lalu scan'],
+  menyambung: ['⏳', 'Menyambungkan…', 'Sebentar, sedang menghubungkan ke WhatsApp'],
+  putus: ['⚪', 'Belum terhubung', 'Tekan "Tampilkan QR" lalu scan dari HP'],
+};
+let waSig = '';
 async function loadWA() {
   let s;
   try { s = await fetch('/api/wa').then((x) => x.json()); } catch { return; }
-  const st = s.status; // terhubung | qr | menyambung | putus | nonaktif
-  const T = {
-    terhubung: ['✅', 'WhatsApp terhubung', `Nomor ${s.nomor} · kirim chat ke dirimu sendiri untuk mencatat`, 'on', 'Terhubung'],
-    qr: ['📱', 'Menunggu scan QR', 'Scan kode QR di bawah ini dari HP kamu', '', 'Scan QR'],
-    menyambung: ['⏳', 'Menyambungkan…', 'Sebentar, sedang menghubungkan ke WhatsApp', '', 'Menyambung'],
-    putus: ['⚪', 'WhatsApp belum terhubung', s.pesan || 'Tekan "Hubungkan WhatsApp" lalu scan QR dari HP kamu', 'off', 'Belum terhubung'],
-    nonaktif: ['⛔', 'WhatsApp tidak dijalankan', 'Server dijalankan tanpa WhatsApp (npm run web)', 'off', 'WA mati'],
-  }[st] || ['⏳', 'Memeriksa…', '', '', 'WhatsApp'];
-  $('#waIc').textContent = T[0]; $('#waTitle').textContent = T[1]; $('#waSub').textContent = T[2];
-  $('#waDot').className = 'dot ' + T[3]; $('#waText').textContent = T[4];
-  $('#qrBox').hidden = !s.qr;
-  if (s.qr && $('#qr').src !== s.qr) $('#qr').src = s.qr;
-  $('#waConnect').hidden = st !== 'putus';
-  $('#waDisconnect').hidden = !['terhubung', 'qr', 'menyambung'].includes(st);
-  $('#waDisconnect').textContent = st === 'terhubung' ? '⛔ Putuskan WhatsApp' : '✕ Batalkan';
-  if (!waOtherDirty && document.activeElement !== $('#waOther')) $('#waOther').value = s.nomor_lain || '';
+  const list = s.perangkat || [];
+  const on = list.filter((p) => p.status === 'terhubung');
+  // chip di header
+  $('#waDot').className = 'dot ' + (on.length ? 'on' : list.some((p) => p.status === 'qr' || p.status === 'menyambung') ? '' : 'off');
+  $('#waText').textContent = !s.aktif ? 'WA mati' : on.length > 1 ? `${on.length} WA aktif` : on.length ? 'Terhubung' : list.length ? 'Belum terhubung' : 'Tambah WA';
+  $('#waAdd').hidden = !s.aktif;
+  // gambar ulang hanya bila ada perubahan (QR tidak berkedip)
+  const sig = JSON.stringify(list) + s.aktif;
+  if (sig === waSig) return;
+  waSig = sig;
+  if (!s.aktif) {
+    $('#waList').innerHTML = '<div class="card empty"><span class="em">⛔</span>Server dijalankan tanpa WhatsApp.<br>Jalankan dengan <b>npm start</b>.</div>';
+    return;
+  }
+  $('#waList').innerHTML = list.length ? list.map((p) => {
+    const t = WA_T[p.status] || WA_T.putus;
+    return `<div class="card wa-card">
+      <div class="wa-head"><span class="ic">${t[0]}</span>
+        <div style="flex:1;min-width:0"><b>${p.nomor ? '+' + esc(p.nomor) : 'Nomor baru'}</b><small>${t[1]}</small></div>
+        <span class="dot ${p.status === 'terhubung' ? 'on' : p.status === 'putus' ? 'off' : ''}"></span></div>
+      <p class="wa-sub">${esc(p.pesan || t[2])}</p>
+      ${p.qr ? `<div class="qr-card" style="padding:4px 0 10px"><img src="${p.qr}" alt="Kode QR WhatsApp"></div>` : ''}
+      <div class="wa-btns">
+        ${p.status === 'putus' ? `<button class="wa-btn primary-sm" data-wa-qr="${p.id}">📱 Tampilkan QR</button>` : ''}
+        <button class="wa-btn danger-sm" data-wa-del="${p.id}" data-on="${p.status === 'terhubung' ? 1 : 0}" data-no="${esc(p.nomor || '')}">${p.status === 'terhubung' ? '⛔ Putuskan' : p.status === 'putus' ? '🗑️ Hapus' : '✕ Batal'}</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="card empty"><span class="em"><img src="/wa.svg" alt="" style="width:52px;height:52px"></span>Belum ada nomor WhatsApp.<br>Tekan <b>＋ Tambah nomor WhatsApp</b> lalu scan QR-nya.</div>';
 }
 const postJSON = (u, b = {}) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
-$('#waConnect').onclick = async () => {
-  $('#waConnect').disabled = true;
-  const r = await postJSON('/api/wa/hubungkan');
-  $('#waConnect').disabled = false;
+$('#waAdd').onclick = async () => {
+  $('#waAdd').disabled = true;
+  const r = await postJSON('/api/wa/tambah');
+  $('#waAdd').disabled = false;
   if (!r.ok) return toast((await r.json()).error || 'Gagal');
   toast('Menyiapkan kode QR…'); loadWA(); setTimeout(loadWA, 2500);
 };
-$('#waDisconnect').onclick = async () => {
-  const sambung = $('#waTitle').textContent === 'WhatsApp terhubung';
-  if (sambung && !confirm('Putuskan WhatsApp? Bot berhenti mencatat dari WA sampai kamu scan QR lagi. Data keuangan tidak terhapus.')) return;
-  $('#waDisconnect').disabled = true;
-  await postJSON('/api/wa/putuskan');
-  $('#waDisconnect').disabled = false;
-  toast(sambung ? '⛔ WhatsApp diputuskan' : 'Dibatalkan'); loadWA();
-};
-$('#waOther').addEventListener('input', () => (waOtherDirty = true));
-$('#waOtherSave').onclick = async () => {
-  const r = await postJSON('/api/wa/nomor-lain', { nomor_lain: $('#waOther').value }).then((x) => x.json());
-  waOtherDirty = false; $('#waOther').value = r.nomor_lain;
-  toast(r.nomor_lain ? '✅ Nomor disimpan' : 'Nomor dikosongkan');
-};
+document.addEventListener('click', async (e) => {
+  const q = e.target.closest('[data-wa-qr]');
+  if (q) { q.disabled = true; await postJSON(`/api/wa/${q.dataset.waQr}/hubungkan`); toast('Menyiapkan kode QR…'); loadWA(); setTimeout(loadWA, 2500); return; }
+  const d = e.target.closest('[data-wa-del]');
+  if (d) {
+    const on = d.dataset.on === '1';
+    if (on && !confirm(`Putuskan WhatsApp +${d.dataset.no}? Bot berhenti mencatat dari nomor ini. Data keuangan tidak terhapus.`)) return;
+    d.disabled = true;
+    await postJSON(`/api/wa/${d.dataset.waDel}/hapus`);
+    toast(on ? '⛔ WhatsApp diputuskan' : 'Dihapus'); loadWA();
+  }
+});
 // ---------- hutang & piutang ----------
 let debtTab = 'hutang', debts = [], debtCur = null;
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -846,17 +950,94 @@ $('#ddDel').onclick = async () => {
   hide(); toast('🗑️ Catatan dihapus'); refresh();
 };
 
-function refresh() { loadHome(); loadMonth(); loadWA(); loadDebt(); }
+// ---------- tabungan ----------
+let tabs = [], tabCur = null, tIkon = '🐷';
+async function loadTab() {
+  const r = await fetch('/api/tabungan').then((x) => x.json());
+  tabs = r.daftar;
+  $('#hTab').textContent = rp(r.total);
+  $('#hTabN').textContent = tabs.length ? `${tabs.length} tabungan` + (tabs.some((b) => b.tercapai) ? ' · 🎉 ada target tercapai' : '') : 'Belum ada tabungan';
+  if (page !== 'tab') return;
+  $('#tTotal').textContent = rp(r.total);
+  $('#tSaldo').textContent = 'Saldo dompet: ' + rp(Number($('#saldo').dataset.v || 0));
+  $('#tabList').innerHTML = tabs.length ? tabs.map((b) => `
+    <button class="tab-card" data-tab-id="${b.id}">
+      <span class="ic">${esc(b.ikon)}</span>
+      <span class="mid"><b>${esc(b.nama)} ${b.tercapai ? '<span class="badge ok">Tercapai</span>' : ''}</b>
+        <small>${b.target ? `Target ${rp(b.target)}` : 'Tanpa target'}${b.tenggat ? ' · ' + tglP(b.tenggat) : ''}</small>
+        ${b.target ? `<span class="ptrack"><i style="width:${b.persen}%"></i></span>` : ''}</span>
+      <span class="rt">${rp(b.terkumpul)}${b.target ? `<small>${b.persen}%</small>` : ''}</span>
+    </button>`).join('')
+    : `<div class="card empty"><span class="em">🐷</span>Belum ada tabungan.<br>Buat tabungan pertamamu, mis. <b>Dana Darurat</b>.</div>`;
+}
+$('#addTabBtn').onclick = () => {
+  tIkon = '🐷'; $$('[data-ikon]').forEach((b) => b.classList.toggle('on', b.dataset.ikon === tIkon));
+  $('#tNama').value = ''; $('#tTarget').value = ''; $('#tTenggat').value = ''; $('#tSave').disabled = true;
+  show($('#tabAddSheet')); setTimeout(() => $('#tNama').focus(), 250);
+};
+$$('[data-ikon]').forEach((b) => (b.onclick = () => { tIkon = b.dataset.ikon; $$('[data-ikon]').forEach((x) => x.classList.toggle('on', x === b)); }));
+$('#tNama').addEventListener('input', () => ($('#tSave').disabled = !$('#tNama').value.trim()));
+$('#tTarget').addEventListener('input', () => { const v = angka($('#tTarget')); $('#tTarget').value = v ? fmt(v) : ''; });
+$('#tSave').onclick = async () => {
+  const r = await postJSON('/api/tabungan', { nama: $('#tNama').value, target: angka($('#tTarget')) || null, tenggat: $('#tTenggat').value || null, ikon: tIkon });
+  const d = await r.json();
+  if (!r.ok) return toast(d.error || 'Gagal');
+  hide(); toast(`${d.ikon} Tabungan ${d.nama} dibuat`); loadTab();
+};
+async function openTab(id) {
+  const b = await fetch('/api/tabungan/' + id).then((x) => x.json());
+  tabCur = b;
+  $('#tdIc').textContent = b.ikon; $('#tdNama').textContent = b.nama;
+  $('#tdIsi').textContent = rp(b.terkumpul);
+  $('#tdTarget').textContent = b.target ? `dari target ${rp(b.target)} (${b.persen}%)` : 'Tanpa target';
+  $('#tdBar').style.width = (b.target ? b.persen : 0) + '%';
+  $('#tdBar').parentElement.hidden = !b.target;
+  $('#tdHint').textContent = b.tercapai ? '🎉 Target tercapai!' : b.target ? `Kurang ${rp(b.target - b.terkumpul)} lagi` + (b.tenggat ? ` · target ${tglP(b.tenggat)}` : '') : '';
+  $('#tdJumlah').value = ''; $('#tdTargetIn').value = b.target ? fmt(b.target) : '';
+  $('#tdTarik').disabled = b.terkumpul <= 0;
+  $('#tdHist').innerHTML = b.riwayat.length ? '<b>Riwayat</b>' + b.riwayat.slice(0, 20).map((t) =>
+    `<div><span>${tglP(t.dibuat)} ${t.dibuat.slice(11, 16)}</span><b class="${t.tipe === 'keluar' ? 'plus' : 'minus'}">${t.tipe === 'keluar' ? '+' : '−'}${rp(t.jumlah)}</b></div>`).join('') : '';
+  show($('#tabSheet'));
+}
+async function aksiTab(aksi, jumlah) {
+  const r = await postJSON(`/api/tabungan/${tabCur.id}/${aksi}`, { jumlah });
+  const d = await r.json();
+  if (!r.ok) return toast(d.error || 'Gagal');
+  hide();
+  toast(aksi === 'setor' ? (d.tabungan.tercapai ? '🎉 Target tercapai!' : `🐷 Nabung ${rp(d.jumlah)}`) : `💸 Tarik ${rp(d.jumlah)} ke saldo`);
+  refresh();
+}
+$('#tdJumlah').addEventListener('input', () => { const v = angka($('#tdJumlah')); $('#tdJumlah').value = v ? fmt(v) : ''; });
+$('#tdTargetIn').addEventListener('input', () => { const v = angka($('#tdTargetIn')); $('#tdTargetIn').value = v ? fmt(v) : ''; });
+$('#tdSetor').onclick = () => { const v = angka($('#tdJumlah')); if (!v) return toast('Isi jumlahnya dulu'); aksiTab('setor', v); };
+$('#tdTarik').onclick = () => {
+  const v = angka($('#tdJumlah'));
+  if (!v && !confirm(`Tarik semua (${rp(tabCur.terkumpul)}) dari ${tabCur.nama}?`)) return;
+  aksiTab('tarik', v || null);
+};
+$('#tdTargetSave').onclick = async () => {
+  await postJSON(`/api/tabungan/${tabCur.id}/ubah`, { target: angka($('#tdTargetIn')) || null });
+  toast('🎯 Target disimpan'); openTab(tabCur.id); loadTab();
+};
+$('#tdDel').onclick = async () => {
+  if (!confirm(`Hapus tabungan ${tabCur.nama}? Isinya (${rp(tabCur.terkumpul)}) kembali ke saldo dompet.`)) return;
+  await fetch('/api/tabungan/' + tabCur.id, { method: 'DELETE' });
+  hide(); toast('🗑️ Tabungan dihapus'); refresh();
+};
+document.addEventListener('click', (e) => { const t = e.target.closest('[data-tab-id]'); if (t) openTab(t.dataset.tabId); });
+
+function refresh() { loadHome(); loadMonth(); loadWA(); loadDebt(); loadTab(); }
 
 // ---------- navigasi ----------
 function go(p) {
   page = p;
-  for (const id of ['home', 'history', 'report', 'wa', 'debt', 'admin']) $('#page-' + id).hidden = id !== p;
+  for (const id of ['home', 'history', 'report', 'wa', 'debt', 'admin', 'tab']) $('#page-' + id).hidden = id !== p;
   $$('nav [data-go]').forEach((b) => b.classList.toggle('on', b.dataset.go === p));
   window.scrollTo(0, 0);
   loadMonth();
   if (p === 'debt') loadDebt();
   if (p === 'admin') loadUsers();
+  if (p === 'tab') loadTab();
   if (p === 'wa') loadWA();
 }
 document.addEventListener('click', (e) => {
@@ -870,7 +1051,6 @@ document.addEventListener('click', (e) => {
   if (m && !m.disabled) { month = new Date(month.getFullYear(), month.getMonth() + Number(m.dataset.month), 1); loadMonth(); }
   const t = e.target.closest('.tx'); if (t) openDetail(txById[t.dataset.id]);
 });
-$('#dlBtn').onclick = () => { location.href = '/api/ekspor.csv?bulan=' + thisMonth; };
 
 // ---------- lembar bawah ----------
 let openSheet = null;
@@ -1034,7 +1214,7 @@ $('#pwSave').onclick = async () => {
 
 // ================= Admin: kelola user =================
 let users = [], uRole = 'user', uCur = null;
-const waLabel = (w) => w.status === 'terhubung' ? `🟢 WA ${w.nomor}` : w.status === 'qr' ? '🟡 menunggu scan' : w.status === 'menyambung' ? '🟡 menyambung' : '⚪ WA belum tertaut';
+const waLabel = (list) => { const on = list.filter((p) => p.status === 'terhubung'); return on.length ? '🟢 ' + on.map((p) => p.nomor).join(', ') : list.length ? '🟡 belum tersambung' : '⚪ WA belum tertaut'; };
 async function loadUsers() {
   const r = await fetch('/api/admin/users');
   if (!r.ok) return;

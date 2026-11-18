@@ -37,10 +37,10 @@ function rentangBulan(bulan) {
 }
 
 /**
- * @param {{port:number, host:string, wa: null | {statusWA, hubungkan, putuskan, pindahkanSesiLama}}} opsi
+ * @param {{port:number, host:string, wa: null | typeof import('./bot.js')}} opsi
  */
 export function mulaiWeb({ port, host, wa }) {
-  const statusWA = (uid) => (wa ? wa.statusWA(uid) : { status: 'nonaktif', nomor: null, qr: null });
+  const statusWA = (uid) => (wa ? wa.statusWA(uid) : []);
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
@@ -52,9 +52,9 @@ export function mulaiWeb({ port, host, wa }) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
         return res.end(readFileSync(HTML));
       }
-      if (M === 'GET' && p === '/logo.svg') {
+      if (M === 'GET' && (p === '/logo.svg' || p === '/wa.svg')) {
         res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=86400' });
-        return res.end(readFileSync(join(dirname(HTML), 'logo.svg')));
+        return res.end(readFileSync(join(dirname(HTML), p.slice(1))));
       }
       if (!p.startsWith('/api/')) return json(res, 404, { error: 'Tidak ditemukan' });
 
@@ -75,7 +75,7 @@ export function mulaiWeb({ port, host, wa }) {
         if (db.jumlahUser() > 0) return json(res, 403, { error: 'Admin sudah dibuat. Silakan login.' });
         const b = await bacaBody(req);
         const baru = db.buatUser({ username: b.username, nama: b.nama, password: b.password, role: 'admin' });
-        if (wa?.pindahkanSesiLama(baru.id)) wa.hubungkan(baru.id).catch(console.error);
+        if (wa?.pindahkanSesiLama(baru.id)) wa.mulaiSemua();
         return json(res, 201, { user: baru }, { 'Set-Cookie': setCookie(db.buatSesi(baru.id), 30 * 86400) });
       }
       if (M === 'POST' && p === '/api/login') {
@@ -100,19 +100,17 @@ export function mulaiWeb({ port, host, wa }) {
         return json(res, 200, {}, { 'Set-Cookie': setCookie(db.buatSesi(uid), 30 * 86400) });
       }
 
-      // ---------- WhatsApp milik user ini ----------
-      if (M === 'GET' && p === '/api/wa') return json(res, 200, { ...statusWA(uid), nomor_lain: user.nomor_lain });
-      if (M === 'POST' && p === '/api/wa/hubungkan') {
-        if (!wa) return json(res, 400, { error: 'Server dijalankan tanpa WhatsApp (npm run web).' });
-        return json(res, 200, await wa.hubungkan(uid));
-      }
-      if (M === 'POST' && p === '/api/wa/putuskan') {
-        if (!wa) return json(res, 400, { error: 'Server dijalankan tanpa WhatsApp.' });
-        return json(res, 200, await wa.putuskan(uid));
-      }
-      if (M === 'POST' && p === '/api/wa/nomor-lain') {
-        const b = await bacaBody(req);
-        return json(res, 200, { nomor_lain: db.setNomorLain(uid, b.nomor_lain) });
+      // ---------- WhatsApp milik user ini (bisa banyak nomor) ----------
+      if (M === 'GET' && p === '/api/wa') return json(res, 200, { aktif: Boolean(wa), perangkat: statusWA(uid) });
+      if (p.startsWith('/api/wa/') && !wa) return json(res, 400, { error: 'Server dijalankan tanpa WhatsApp (npm run web).' });
+      if (M === 'POST' && p === '/api/wa/tambah') return json(res, 200, await wa.tambahNomor(uid));
+      const mWa = p.match(/^\/api\/wa\/(\d+)\/(hubungkan|hapus)$/);
+      if (mWa && M === 'POST') {
+        const pid = Number(mWa[1]);
+        if (db.ambilPerangkat(pid)?.user_id !== uid) return json(res, 404, { error: 'Nomor tidak ditemukan' });
+        if (mWa[2] === 'hubungkan') return json(res, 200, await wa.hubungkan(pid));
+        await wa.hapusNomor(pid);
+        return json(res, 200, {});
       }
 
       // ---------- Admin ----------
@@ -135,7 +133,7 @@ export function mulaiWeb({ port, host, wa }) {
           }
           if (M === 'DELETE' && !mU[2]) {
             if (id === uid) return json(res, 400, { error: 'Tidak bisa menghapus akunmu sendiri' });
-            if (wa) await wa.putuskan(id);
+            if (wa) await wa.hapusSemuaNomor(id);
             db.hapusUser(id);
             return json(res, 200, {});
           }
@@ -161,6 +159,41 @@ export function mulaiWeb({ port, host, wa }) {
       }
       const mHapus = p.match(/^\/api\/transaksi\/(\d+)$/);
       if (M === 'DELETE' && mHapus) return json(res, db.hapus(Number(mHapus[1]), uid) ? 200 : 404, {});
+
+      // ---------- Tabungan ----------
+      if (M === 'GET' && p === '/api/tabungan') {
+        return json(res, 200, { total: db.totalTabungan(uid), daftar: db.daftarTabungan(uid) });
+      }
+      if (M === 'POST' && p === '/api/tabungan') {
+        const b = await bacaBody(req);
+        try {
+          return json(res, 201, db.buatTabungan({ uid, nama: b.nama, target: Number(b.target) || null,
+            tenggat: /^\d{4}-\d{2}-\d{2}$/.test(b.tenggat || '') ? b.tenggat : null, ikon: String(b.ikon || '🐷').slice(0, 8) }));
+        } catch (e) { return json(res, 400, { error: e.message }); }
+      }
+      const mTab = p.match(/^\/api\/tabungan\/(\d+)(?:\/(setor|tarik|ubah))?$/);
+      if (mTab) {
+        const id = Number(mTab[1]);
+        const aksi = mTab[2];
+        if (M === 'GET' && !aksi) {
+          const t = db.ambilTabungan(id, uid);
+          return t ? json(res, 200, t) : json(res, 404, { error: 'Tidak ditemukan' });
+        }
+        if (M === 'DELETE' && !aksi) return json(res, db.hapusTabungan(id, uid) ? 200 : 404, {});
+        if (M === 'POST' && aksi) {
+          const b = await bacaBody(req);
+          if (aksi === 'ubah') {
+            const t = db.ubahTabungan(id, uid, { nama: b.nama, target: b.target === undefined ? undefined : Number(b.target) || null,
+              tenggat: b.tenggat === undefined ? undefined : (/^\d{4}-\d{2}-\d{2}$/.test(b.tenggat || '') ? b.tenggat : null), ikon: b.ikon });
+            return t ? json(res, 200, t) : json(res, 404, { error: 'Tidak ditemukan' });
+          }
+          const jumlah = b.jumlah == null ? null : Math.round(Number(b.jumlah));
+          const r = aksi === 'setor'
+            ? db.setorTabungan({ uid, id, jumlah, pengirim: 'web' })
+            : db.tarikTabungan({ uid, id, jumlah, pengirim: 'web' });
+          return json(res, r.ok ? 200 : 400, r.ok ? r : { error: r.alasan });
+        }
+      }
 
       // ---------- Hutang & piutang ----------
       if (M === 'GET' && p === '/api/hutang') {

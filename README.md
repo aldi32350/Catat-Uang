@@ -13,17 +13,17 @@ Catat uang **masuk**, **keluar**, serta **hutang & piutang** cukup dengan chat W
    npm start
    ```
 3. Buka **http://localhost:3000**. Pertama kali, buat **akun admin**. Data & WhatsApp yang sudah ada (dari versi sebelumnya) otomatis menjadi milik admin ini.
-4. Buka menu **WhatsApp** → **Hubungkan WhatsApp**, lalu scan QR dari HP: WhatsApp → **Perangkat tertaut** → **Tautkan perangkat**.
+4. Buka menu **WhatsApp** → **＋ Tambah nomor WhatsApp**, lalu scan QR dari HP: WhatsApp → **Perangkat tertaut** → **Tautkan perangkat**.
 5. Buka chat **dirimu sendiri** ("Message yourself") di WhatsApp lalu ketik `bantuan`.
 
 ## Banyak user
 
 - **Admin** membuat user lewat avatar di kanan atas → **Kelola user** (nama, username, password awal, peran). Admin juga bisa reset password dan menghapus user beserta datanya.
-- **Setiap user** login dengan akunnya sendiri, punya buku keuangan sendiri, dan menautkan **WhatsApp-nya sendiri** dari menu WhatsApp. Data antar user tidak tercampur.
-- Tombol **Putuskan WhatsApp** melepas perangkat tertaut dari HP dan menghentikan bot untuk user itu. Data keuangan tidak terhapus.
-- **Nomor lain yang boleh mencatat** (mis. pasangan) diatur per user di menu WhatsApp.
+- **Setiap user** login dengan akunnya sendiri dan punya buku keuangan sendiri. Data antar user tidak tercampur.
+- Setiap user bisa menautkan **beberapa nomor WhatsApp** (＋ Tambah nomor WhatsApp → scan QR). Chat ke diri sendiri dari nomor mana pun masuk ke buku user itu. Satu nomor hanya bisa tertaut sekali.
+- Tombol **Putuskan** melepas nomor dari HP dan menghentikan bot untuk nomor itu. Data keuangan tidak terhapus.
 
-Sesi WhatsApp tiap user disimpan di `data/sesi-wa/<id-user>/`, jadi scan cukup sekali. Semua data ada di `data/keuangan.db`.
+Sesi tiap nomor WhatsApp disimpan di `data/sesi-wa/p<id>/`, jadi scan cukup sekali. Semua data ada di `data/keuangan.db`.
 
 ## Contoh chat
 
@@ -44,7 +44,12 @@ Sesi WhatsApp tiap user disimpan di `data/sesi-wa/<id-user>/`, jadi scan cukup s
 | `terima piutang andi 50rb` | Piutang dibayar |
 | `hutang piutang` | Daftar sisa hutang & piutang per orang |
 
-Pinjaman dan pembayarannya mengubah saldo, tapi **tidak dihitung** sebagai pemasukan/pengeluaran di laporan bulanan.
+| `nabung 100rb umroh` | Setor ke tabungan Umroh (dibuat otomatis bila belum ada) |
+| `target umroh 10jt` | Atur target tabungan |
+| `tarik tabungan umroh 50rb` / `... semua` | Tarik tabungan kembali ke saldo |
+| `tabungan` | Daftar tabungan & progres target |
+
+Pinjaman, pembayaran hutang, dan setor/tarik tabungan mengubah saldo dompet, tapi **tidak dihitung** sebagai pemasukan/pengeluaran di laporan bulanan. Laporan ada di menu avatar (kanan atas) → **Laporan**.
 
 Penulisan angka yang dikenali: `25rb`, `25k`, `25.000`, `1,5jt`, `Rp 1.250.000`. Kategori (Makan, Transportasi, Tagihan, dll.) dipilih otomatis dari keterangannya.
 
@@ -92,5 +97,5 @@ Mode hanya dashboard tanpa WhatsApp: `npm run web`. Untuk menjalankan tes: `npm 
 ## Penting
 
 - Koneksi WhatsApp memakai **Baileys** (cara tidak resmi, seperti WhatsApp Web). Gratis, tapi ada risiko kecil nomor diblokir WhatsApp. Lebih aman pakai **nomor cadangan** sebagai nomor bot.
-- Bot hanya membalas chat ke diri sendiri dan nomor lain yang diizinkan user itu. Chat lain dan grup diabaikan.
+- Bot hanya membalas chat ke diri sendiri di nomor yang tertaut. Chat dengan orang lain dan grup diabaikan.
 - Password disimpan ter-hash (scrypt), sesi login berlaku 30 hari. Untuk dibuka dari internet, tetap pasang HTTPS (mis. lewat reverse proxy) agar password tidak terkirim polos.
