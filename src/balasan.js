@@ -53,7 +53,7 @@ export const BANTUAN = `📒 *Catat Keuangan*
 Angka bisa ditulis 25rb, 25k, 25.000, 1,5jt.`;
 
 function balasTercatat(t) {
-  const s = db.saldo();
+  const s = db.saldo(t.user_id);
   const ikon = t.tipe === 'masuk' ? '🟢 Uang MASUK' : '🔴 Uang KELUAR';
   return `✅ Tercatat\n${ikon}: *${rupiah(t.jumlah)}*\n📝 ${t.keterangan}\n🏷️ ${t.kategori}\n\n💰 Saldo terakhir: *${rupiah(s.saldo)}*`;
 }
@@ -76,7 +76,7 @@ function waktuDariStruk(tanggal, sekarang = new Date()) {
  * Mengubah hasil bacaStruk() menjadi balasan WA dan menyimpan draf yang menunggu konfirmasi.
  * @param {{ok:boolean, data?:object, alasan?:string}} hasil
  */
-export function balasStruk(hasil, pengirim, caption = '') {
+export function balasStruk(hasil, pengirim, caption = '', uid) {
   if (!hasil.ok) return `⚠️ ${hasil.alasan}\n\nKamu tetap bisa mencatat manual, mis. *keluar 50rb belanja*.`;
   const s = hasil.data;
   if (!s.adalah_struk) return '🤔 Foto ini sepertinya bukan struk atau bukti pembayaran.\n\nKirim foto struk yang jelas, atau catat manual: *keluar 50rb belanja*.';
@@ -85,7 +85,7 @@ export function balasStruk(hasil, pengirim, caption = '') {
 
   const keterangan = (caption.trim() || s.ringkasan || s.toko || 'Belanja').slice(0, 200);
   const draf = { tipe: s.tipe, jumlah, keterangan, kategori: s.kategori, dibuat: waktuDariStruk(s.tanggal), sampai: Date.now() + BATAS_TUNGGU };
-  strukMenunggu.set(pengirim, draf);
+  strukMenunggu.set(`${uid}:${pengirim}`, draf);
 
   const ikon = draf.tipe === 'masuk' ? '🟢 Uang MASUK' : '🔴 Uang KELUAR';
   return [
@@ -102,25 +102,26 @@ export function balasStruk(hasil, pengirim, caption = '') {
   ].filter((x) => x !== null).join('\n');
 }
 
-function prosesKonfirmasi(teks, pengirim) {
-  const draf = strukMenunggu.get(pengirim);
+function prosesKonfirmasi(teks, pengirim, uid) {
+  const kunci = `${uid}:${pengirim}`;
+  const draf = strukMenunggu.get(kunci);
   if (!draf) return null;
-  if (Date.now() > draf.sampai) { strukMenunggu.delete(pengirim); return null; }
+  if (Date.now() > draf.sampai) { strukMenunggu.delete(kunci); return null; }
   const k = teks.trim().toLowerCase();
   if (/^(ya|y|iya|ok|oke|simpan|benar|betul)$/.test(k)) {
-    strukMenunggu.delete(pengirim);
-    return balasTercatat(db.tambah({ ...draf, pengirim }));
+    strukMenunggu.delete(kunci);
+    return balasTercatat(db.tambah({ uid, ...draf, pengirim }));
   }
   if (/^(batal|tidak|gak|nggak|no|cancel)$/.test(k)) {
-    strukMenunggu.delete(pengirim);
+    strukMenunggu.delete(kunci);
     return '❎ Struk tidak dicatat.';
   }
   const angka = k.match(/^(?:ubah\s+)?(?:rp\.?\s*)?(\d+(?:[.,]\d+)*\s*(?:rb|ribu|k|jt|juta)?)$/);
   if (angka) {
     const j = bacaJumlah(angka[1]);
     if (j) {
-      strukMenunggu.delete(pengirim);
-      return balasTercatat(db.tambah({ ...draf, jumlah: j.nilai, pengirim }));
+      strukMenunggu.delete(kunci);
+      return balasTercatat(db.tambah({ uid, ...draf, jumlah: j.nilai, pengirim }));
     }
   }
   return null; // pesan lain diproses seperti biasa, draf tetap menunggu
@@ -141,16 +142,16 @@ function infoTempo(iso, sekarang = new Date()) {
   return ` · tempo ${tglPendek(iso)}`;
 }
 
-function barisHutang() {
-  const t = db.totalHutang();
+function barisHutang(uid) {
+  const t = db.totalHutang(uid);
   if (!t.hutang && !t.piutang) return '';
   return `\n\n📕 Hutang saya: ${rupiah(t.hutang)}\n📗 Piutang (uang saya di orang): ${rupiah(t.piutang)}`;
 }
 
-function daftarHutangTeks(filter) {
+function daftarHutangTeks(filter, uid) {
   const bagian = [];
   for (const jenis of filter ? [filter] : ['hutang', 'piutang']) {
-    const orang = db.hutangPerOrang(jenis);
+    const orang = db.hutangPerOrang(jenis, uid);
     const total = orang.reduce((s, o) => s + o.sisa, 0);
     const judul = jenis === 'hutang' ? `📕 *Hutang saya* — ${rupiah(total)}` : `📗 *Piutang (orang berhutang ke saya)* — ${rupiah(total)}`;
     bagian.push(judul + '\n' + (orang.length
@@ -160,12 +161,12 @@ function daftarHutangTeks(filter) {
   return bagian.join('\n\n') + '\n\nBayar: *bayar hutang budi 100rb* · Terima: *terima piutang andi 50rb*';
 }
 
-function prosesHutang(h, pengirim) {
-  if (h.jenis === 'perintah') return daftarHutangTeks(h.filter);
+function prosesHutang(h, pengirim, uid) {
+  if (h.jenis === 'perintah') return daftarHutangTeks(h.filter, uid);
 
   if (h.jenis === 'hutang-baru') {
-    const { hutang } = db.buatHutang({ jenis: h.tipe, nama: h.nama, jumlah: h.jumlah, keterangan: h.keterangan, jatuh_tempo: h.tempo, pengirim });
-    const totalOrang = db.hutangPerOrang(h.tipe).find((o) => o.nama.toLowerCase() === hutang.nama.toLowerCase())?.sisa ?? hutang.jumlah;
+    const { hutang } = db.buatHutang({ uid, jenis: h.tipe, nama: h.nama, jumlah: h.jumlah, keterangan: h.keterangan, jatuh_tempo: h.tempo, pengirim });
+    const totalOrang = db.hutangPerOrang(h.tipe, uid).find((o) => o.nama.toLowerCase() === hutang.nama.toLowerCase())?.sisa ?? hutang.jumlah;
     const isHutang = h.tipe === 'hutang';
     return [
       isHutang ? '📕 *Hutang tercatat*' : '📗 *Piutang tercatat*',
@@ -175,18 +176,18 @@ function prosesHutang(h, pengirim) {
       hutang.jatuh_tempo ? `📅 Jatuh tempo: ${tglPendek(hutang.jatuh_tempo)}` : null,
       '',
       isHutang ? `Total hutangmu ke ${hutang.nama}: *${rupiah(totalOrang)}*` : `Total piutang ${hutang.nama}: *${rupiah(totalOrang)}*`,
-      `💰 Saldo terakhir: *${rupiah(db.saldo().saldo)}*`,
+      `💰 Saldo terakhir: *${rupiah(db.saldo(uid).saldo)}*`,
     ].filter((x) => x !== null).join('\n');
   }
 
   // hutang-bayar
   if (h.jumlah === undefined) {
-    const sisa = db.hutangPerOrang(h.tipe).find((o) => o.nama.toLowerCase() === h.nama.toLowerCase())?.sisa;
+    const sisa = db.hutangPerOrang(h.tipe, uid).find((o) => o.nama.toLowerCase() === h.nama.toLowerCase())?.sisa;
     const contoh = h.tipe === 'hutang' ? `bayar hutang ${h.nama.toLowerCase()} 100rb` : `terima piutang ${h.nama.toLowerCase()} 100rb`;
     return (sisa ? `Sisa ${h.tipe === 'hutang' ? 'hutang ke' : 'piutang'} ${h.nama}: *${rupiah(sisa)}*\n\n` : '') +
       `Berapa jumlahnya? Contoh: *${contoh}*, atau tambahkan *lunas* untuk melunasi semuanya.`;
   }
-  const r = db.bayarHutang({ jenis: h.tipe, nama: h.nama, jumlah: h.jumlah, pengirim });
+  const r = db.bayarHutang({ uid, jenis: h.tipe, nama: h.nama, jumlah: h.jumlah, pengirim });
   if (!r.ok) return `🤔 ${r.alasan}\n\nKetik *hutang piutang* untuk melihat daftarnya.`;
   const isHutang = h.tipe === 'hutang';
   return [
@@ -195,56 +196,56 @@ function prosesHutang(h, pengirim) {
     r.lunas ? (isHutang ? `🎉 Hutang ke ${r.nama} *LUNAS*` : `🎉 Piutang ${r.nama} *LUNAS*`)
       : `Sisa ${isHutang ? 'hutang ke' : 'piutang'} ${r.nama}: *${rupiah(r.sisa)}*`,
     '',
-    `💰 Saldo terakhir: *${rupiah(db.saldo().saldo)}*`,
+    `💰 Saldo terakhir: *${rupiah(db.saldo(uid).saldo)}*`,
   ].filter((x) => x !== null).join('\n');
 }
 
 /** Mengembalikan teks balasan, atau null bila pesan bukan untuk bot. */
-export function prosesPesan(teks, pengirim) {
-  const konfirmasi = prosesKonfirmasi(teks, pengirim);
+export function prosesPesan(teks, pengirim, uid) {
+  const konfirmasi = prosesKonfirmasi(teks, pengirim, uid);
   if (konfirmasi) return konfirmasi;
 
   const hh = uraiHutang(teks);
-  if (hh) return prosesHutang(hh, pengirim);
+  if (hh) return prosesHutang(hh, pengirim, uid);
 
   const hasil = uraiPesan(teks);
   if (!hasil) return null;
 
   if (hasil.jenis === 'transaksi') {
-    return balasTercatat(db.tambah({ ...hasil, pengirim }));
+    return balasTercatat(db.tambah({ uid, ...hasil, pengirim }));
   }
 
   switch (hasil.nama) {
     case 'bantuan':
       return BANTUAN;
     case 'saldo': {
-      const s = db.saldo();
-      return `💰 *Saldo terakhir: ${rupiah(s.saldo)}*\n\n🟢 Total masuk: ${rupiah(s.masuk)}\n🔴 Total keluar: ${rupiah(s.keluar)}` + barisHutang();
+      const s = db.saldo(uid);
+      return `💰 *Saldo terakhir: ${rupiah(s.saldo)}*\n\n🟢 Total masuk: ${rupiah(s.masuk)}\n🔴 Total keluar: ${rupiah(s.keluar)}` + barisHutang(uid);
     }
     case 'laporan': {
       const [dari, sampai, label] = rentang(hasil.periode);
-      const r = db.ringkasan(dari, sampai);
-      const s = db.saldo();
+      const r = db.ringkasan(dari, sampai, uid);
+      const s = db.saldo(uid);
       let teksLap = `📊 *Laporan ${label}*\n\n🟢 Masuk: ${rupiah(r.masuk)}\n🔴 Keluar: ${rupiah(r.keluar)}\n➖ Selisih: ${rupiah(r.selisih)}\n🧾 ${r.jumlahTransaksi} transaksi`;
       if (r.perKategori.length) {
         teksLap += '\n\n*Pengeluaran per kategori:*\n' +
           r.perKategori.map((k) => `• ${k.kategori}: ${rupiah(k.total)}`).join('\n');
       }
-      return teksLap + `\n\n💰 Saldo terakhir: *${rupiah(s.saldo)}*` + barisHutang();
+      return teksLap + `\n\n💰 Saldo terakhir: *${rupiah(s.saldo)}*` + barisHutang(uid);
     }
     case 'riwayat': {
-      const list = db.daftar({ limit: 10 });
+      const list = db.daftar({ uid, limit: 10 });
       if (!list.length) return 'Belum ada transaksi. Ketik *bantuan* untuk cara mencatat.';
       return '🧾 *10 transaksi terakhir*\n\n' + list.map((t) =>
         `${t.tipe === 'masuk' ? '🟢 +' : '🔴 -'}${rupiah(t.jumlah)} ${t.keterangan}\n   ${t.dibuat.slice(0, 16)} · saldo ${rupiah(t.saldoSetelah)}`
       ).join('\n');
     }
     case 'hapus': {
-      const t = db.terakhirDari(pengirim);
+      const t = db.terakhirDari(pengirim, uid);
       if (!t) return 'Tidak ada catatan darimu yang bisa dihapus.';
-      db.hapus(t.id);
+      db.hapus(t.id, uid);
       const ekstra = t.hutang_peran === 'pokok' ? `\n(catatan ${t.kategori.toLowerCase()} ini ikut dihapus)` : '';
-      return `🗑️ Dihapus: ${t.tipe === 'masuk' ? '+' : '-'}${rupiah(t.jumlah)} ${t.keterangan}${ekstra}\n\n💰 Saldo terakhir: *${rupiah(db.saldo().saldo)}*`;
+      return `🗑️ Dihapus: ${t.tipe === 'masuk' ? '+' : '-'}${rupiah(t.jumlah)} ${t.keterangan}${ekstra}\n\n💰 Saldo terakhir: *${rupiah(db.saldo(uid).saldo)}*`;
     }
   }
   return null;

@@ -12,10 +12,9 @@ const PORT = Number(argPort || process.env.PORT || 3000);
 const HOST = process.env.HOST || '127.0.0.1';
 const tanpaWA = process.argv.includes('--tanpa-wa');
 
-let status = null;
+let wa = null;
 if (!tanpaWA) {
-  const bot = await import('./bot.js');
-  status = bot.status;
-  bot.mulaiBot().catch((e) => console.error('Gagal memulai WhatsApp:', e));
+  wa = await import('./bot.js');
+  wa.mulaiSemua(); // sambungkan ulang WhatsApp semua user yang pernah tertaut
 }
-mulaiWeb({ port: PORT, host: HOST, status });
+mulaiWeb({ port: PORT, host: HOST, wa });

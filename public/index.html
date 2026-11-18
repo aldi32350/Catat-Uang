@@ -122,6 +122,40 @@
   .month button { width: 38px; height: 38px; border-radius: 12px; font-size: 20px; }
   .month button:hover { background: var(--chip); }
 
+  /* ---------- login ---------- */
+  .auth { min-height: 100vh; max-width: 440px; margin: 0 auto; background: var(--bg); }
+  .auth-top { background: radial-gradient(120% 90% at 100% 0%, #4fb0ff 0%, rgba(79,176,255,0) 55%),
+      linear-gradient(160deg, var(--brand-2) 0%, var(--brand) 45%, var(--brand-dark) 100%);
+    color: #fff; text-align: center; padding: 48px 20px 90px; border-radius: 0 0 30px 30px; }
+  .auth-logo { width: 72px; height: 72px; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,30,90,.3); }
+  .auth-top h1 { margin: 12px 0 2px; font-size: 26px; }
+  .auth-top p { margin: 0; opacity: .85; }
+  .auth-card { background: var(--card); margin: -60px 16px 0; border-radius: 22px; box-shadow: 0 10px 30px rgba(20,60,130,.14);
+    padding: 20px 18px; display: grid; gap: 10px; position: relative; }
+  .auth-card h2 { margin: 0 0 4px; font-size: 20px; }
+  .pw { display: flex; align-items: center; }
+  .pw input { flex: 1; }
+  .pw-eye { font-size: 16px; padding: 4px 6px; opacity: .6; }
+  .auth-err { color: var(--red); font-weight: 600; font-size: 14px; margin: 0; min-height: 0; }
+  .auth-err:empty { display: none; }
+  .top-btns { display: flex; gap: 8px; align-items: center; }
+  .me { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.22); color: #fff; font-weight: 800;
+    border: 2px solid rgba(255,255,255,.5); display: grid; place-items: center; }
+  .menu { margin-top: 16px; background: var(--chip); border-radius: 16px; overflow: hidden; }
+  .menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; font-weight: 600; text-align: left; }
+  .menu button + button { border-top: 1px solid var(--line); }
+  .menu button span { flex: 1; }
+  .menu button i { font-style: normal; color: var(--muted); font-size: 20px; }
+  .menu button:hover { background: var(--line); }
+  .user-row { display: flex; gap: 12px; align-items: center; padding: 14px 16px; width: 100%; text-align: left; }
+  .user-row + .user-row { border-top: 1px solid var(--line); }
+  .user-row:hover { background: var(--chip); }
+  .user-row .mid { flex: 1; min-width: 0; }
+  .user-row .mid b { display: block; }
+  .user-row .mid small { color: var(--muted); font-size: 13px; }
+  .badge.adm { background: #e5efff; color: var(--brand); }
+  @media (prefers-color-scheme: dark) { .badge.adm { background: #13294a; color: #6fb0ff; } }
+
   /* ---------- hutang & piutang ---------- */
   .debt-sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .debt-tile { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 14px; text-align: left; }
@@ -240,13 +274,36 @@
 </style>
 </head>
 <body>
-<div class="app">
+<!-- ============ LOGIN / SETUP ADMIN ============ -->
+<div class="auth" id="auth" hidden>
+  <div class="auth-top">
+    <img src="/logo.svg" alt="" class="auth-logo">
+    <h1>Catat Uang</h1>
+    <p id="authSub">Masuk untuk melihat keuanganmu</p>
+  </div>
+  <form class="auth-card" id="authForm" autocomplete="on">
+    <h2 id="authTitle">Masuk</h2>
+    <label class="field" id="authNamaF" hidden><small>Nama lengkap</small><input id="authNama" autocomplete="name" maxlength="60"></label>
+    <label class="field"><small>Username</small><input id="authUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label class="field"><small>Password</small>
+      <span class="pw"><input id="authPass" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" id="pwEye" aria-label="Lihat password">👁</button></span>
+    </label>
+    <p class="auth-err" id="authErr" role="alert"></p>
+    <button class="primary" id="authBtn">Masuk</button>
+    <p class="note-small" id="authNote">Belum punya akun? Minta admin untuk membuatkan.</p>
+  </form>
+</div>
+
+<div class="app" id="app" hidden>
   <!-- ============ BERANDA ============ -->
   <section id="page-home">
     <div class="top">
       <div class="hello">
-        <div class="brand"><img src="/logo.svg" alt=""><div><small id="greet">Halo</small><b>Catat Uang</b></div></div>
-        <button class="wa-chip" data-go="wa"><span class="dot" id="waDot"></span><span id="waText">WhatsApp</span></button>
+        <div class="brand"><img src="/logo.svg" alt=""><div><small id="greet">Halo</small><b id="helloName">Catat Uang</b></div></div>
+        <div class="top-btns">
+          <button class="wa-chip" data-go="wa"><span class="dot" id="waDot"></span><span id="waText">WhatsApp</span></button>
+          <button class="me" id="meBtn" aria-label="Akun saya"><span id="meInit">?</span></button>
+        </div>
       </div>
       <div class="bal">
       <div class="wallet-label">Saldo kamu
@@ -336,6 +393,18 @@
     </main>
   </section>
 
+  <!-- ============ ADMIN ============ -->
+  <section id="page-admin" hidden>
+    <main>
+      <div class="sec" style="margin-top:18px;display:flex;align-items:center;justify-content:space-between">
+        <h2 style="margin:0;font-size:22px">Kelola User</h2><span class="badge ok" style="font-size:12.5px">Admin</span>
+      </div>
+      <div class="sec"><div class="card" id="userList"></div></div>
+      <button class="add-debt" id="addUserBtn">＋ Tambah user</button>
+      <p class="note-small">Setiap user punya buku keuangan & WhatsApp sendiri. Data antar user tidak tercampur.</p>
+    </main>
+  </section>
+
   <!-- ============ WHATSAPP ============ -->
   <section id="page-wa" hidden>
     <main>
@@ -345,6 +414,13 @@
         <b>Scan untuk menghubungkan</b>
         <p style="color:var(--muted);font-size:14px;margin:6px 0 14px">WhatsApp di HP → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b></p>
         <img id="qr" alt="Kode QR WhatsApp">
+      </div>
+      <button class="add-debt" id="waConnect" hidden>📱 Hubungkan WhatsApp</button>
+      <button class="danger" id="waDisconnect" hidden>⛔ Putuskan WhatsApp</button>
+      <div class="sec card" style="padding:14px 16px">
+        <b>Nomor lain yang boleh mencatat</b>
+        <p style="color:var(--muted);font-size:13.5px;margin:4px 0 10px">Mis. nomor pasangan. Mereka cukup chat ke nomor WA-mu yang tertaut. Pisahkan dengan koma.</p>
+        <div class="pay-row" style="margin-top:0"><input id="waOther" inputmode="tel" placeholder="6281234567890"><button id="waOtherSave">Simpan</button></div>
       </div>
       <div class="sec">
         <div class="sec-head"><h2>Cara pakai di chat</h2></div>
@@ -440,6 +516,48 @@
   <div class="hist" id="ddHist"></div>
   <button class="danger" id="ddDel">Hapus catatan ini</button>
   <p class="note-small">Menghapus catatan juga menghapus transaksi pinjaman & pembayarannya dari saldo.</p>
+</div>
+
+<!-- ============ LEMBAR: AKUN SAYA ============ -->
+<div class="sheet" id="meSheet" role="dialog" aria-label="Akun saya">
+  <div class="grab"></div>
+  <div class="avatar" id="meAv" style="width:64px;height:64px;font-size:26px;margin:0 auto 8px"></div>
+  <div style="text-align:center;font-weight:800;font-size:18px" id="meName"></div>
+  <div style="text-align:center;color:var(--muted)" id="meUser"></div>
+  <div class="menu">
+    <button id="goAdmin" hidden>👥 <span>Kelola user</span><i>›</i></button>
+    <button data-go="wa" data-close>💬 <span>WhatsApp saya</span><i>›</i></button>
+    <button id="pwBtn">🔑 <span>Ganti password</span><i>›</i></button>
+  </div>
+  <button class="danger" id="logoutBtn">Keluar</button>
+</div>
+
+<!-- ============ LEMBAR: GANTI PASSWORD ============ -->
+<div class="sheet" id="pwSheet" role="dialog" aria-label="Ganti password">
+  <div class="grab"></div>
+  <h3>Ganti password</h3>
+  <label class="field"><small>Password lama</small><input id="pwOld" type="password" autocomplete="current-password"></label>
+  <label class="field" style="margin-top:10px"><small>Password baru (min. 6 karakter)</small><input id="pwNew" type="password" autocomplete="new-password"></label>
+  <button class="primary" id="pwSave">Simpan</button>
+</div>
+
+<!-- ============ LEMBAR: USER (ADMIN) ============ -->
+<div class="sheet" id="userSheet" role="dialog" aria-label="User">
+  <div class="grab"></div>
+  <h3 id="uTitle">Tambah user</h3>
+  <div id="uNewBox">
+    <label class="field"><small>Nama</small><input id="uNama" maxlength="60" placeholder="mis. Siti Aminah"></label>
+    <label class="field" style="margin-top:10px"><small>Username (untuk login)</small><input id="uUser" autocapitalize="none" spellcheck="false" placeholder="mis. siti"></label>
+    <label class="field" style="margin-top:10px"><small>Password awal (min. 6 karakter)</small><input id="uPass" type="text" autocomplete="off"></label>
+    <div class="seg" style="margin-top:12px"><button data-role="user" class="plain on">User biasa</button><button data-role="admin" class="plain">Admin</button></div>
+    <button class="primary" id="uSave">Buat user</button>
+  </div>
+  <div id="uEditBox" hidden>
+    <div class="rows" id="uInfo"></div>
+    <label class="field" style="margin-top:14px"><small>Password baru untuk user ini</small><input id="uNewPass" type="text" autocomplete="off" placeholder="min. 6 karakter"></label>
+    <button class="primary" id="uResetPw">Reset password</button>
+    <button class="danger" id="uDel">Hapus user & semua datanya</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -547,24 +665,54 @@ async function loadMonth() {
       : `<div class="empty"><span class="em">📊</span>Belum ada pengeluaran di bulan ini.</div>`;
   }
 }
+let waOtherDirty = false;
 async function loadWA() {
   let s;
-  try { s = await fetch('/api/status').then((x) => x.json()); } catch { return; }
-  const on = s.terhubung, off = s.nonaktif;
-  $('#waDot').className = 'dot ' + (on ? 'on' : off ? 'off' : '');
-  $('#waText').textContent = on ? 'Terhubung' : off ? 'WA mati' : 'Belum terhubung';
-  $('#waIc').textContent = on ? '✅' : off ? '⛔' : '📱';
-  $('#waTitle').textContent = on ? 'WhatsApp terhubung' : off ? 'WhatsApp tidak dijalankan' : 'WhatsApp belum terhubung';
-  $('#waSub').textContent = on ? `Nomor ${s.nomor} · kirim chat ke dirimu sendiri untuk mencatat`
-    : off ? 'Jalankan dengan "npm start" untuk menyambungkan WhatsApp' : 'Scan kode QR di bawah ini';
+  try { s = await fetch('/api/wa').then((x) => x.json()); } catch { return; }
+  const st = s.status; // terhubung | qr | menyambung | putus | nonaktif
+  const T = {
+    terhubung: ['✅', 'WhatsApp terhubung', `Nomor ${s.nomor} · kirim chat ke dirimu sendiri untuk mencatat`, 'on', 'Terhubung'],
+    qr: ['📱', 'Menunggu scan QR', 'Scan kode QR di bawah ini dari HP kamu', '', 'Scan QR'],
+    menyambung: ['⏳', 'Menyambungkan…', 'Sebentar, sedang menghubungkan ke WhatsApp', '', 'Menyambung'],
+    putus: ['⚪', 'WhatsApp belum terhubung', s.pesan || 'Tekan "Hubungkan WhatsApp" lalu scan QR dari HP kamu', 'off', 'Belum terhubung'],
+    nonaktif: ['⛔', 'WhatsApp tidak dijalankan', 'Server dijalankan tanpa WhatsApp (npm run web)', 'off', 'WA mati'],
+  }[st] || ['⏳', 'Memeriksa…', '', '', 'WhatsApp'];
+  $('#waIc').textContent = T[0]; $('#waTitle').textContent = T[1]; $('#waSub').textContent = T[2];
+  $('#waDot').className = 'dot ' + T[3]; $('#waText').textContent = T[4];
   $('#qrBox').hidden = !s.qr;
-  if (s.qr) $('#qr').src = s.qr;
+  if (s.qr && $('#qr').src !== s.qr) $('#qr').src = s.qr;
+  $('#waConnect').hidden = st !== 'putus';
+  $('#waDisconnect').hidden = !['terhubung', 'qr', 'menyambung'].includes(st);
+  $('#waDisconnect').textContent = st === 'terhubung' ? '⛔ Putuskan WhatsApp' : '✕ Batalkan';
+  if (!waOtherDirty && document.activeElement !== $('#waOther')) $('#waOther').value = s.nomor_lain || '';
 }
+const postJSON = (u, b = {}) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
+$('#waConnect').onclick = async () => {
+  $('#waConnect').disabled = true;
+  const r = await postJSON('/api/wa/hubungkan');
+  $('#waConnect').disabled = false;
+  if (!r.ok) return toast((await r.json()).error || 'Gagal');
+  toast('Menyiapkan kode QR…'); loadWA(); setTimeout(loadWA, 2500);
+};
+$('#waDisconnect').onclick = async () => {
+  const sambung = $('#waTitle').textContent === 'WhatsApp terhubung';
+  if (sambung && !confirm('Putuskan WhatsApp? Bot berhenti mencatat dari WA sampai kamu scan QR lagi. Data keuangan tidak terhapus.')) return;
+  $('#waDisconnect').disabled = true;
+  await postJSON('/api/wa/putuskan');
+  $('#waDisconnect').disabled = false;
+  toast(sambung ? '⛔ WhatsApp diputuskan' : 'Dibatalkan'); loadWA();
+};
+$('#waOther').addEventListener('input', () => (waOtherDirty = true));
+$('#waOtherSave').onclick = async () => {
+  const r = await postJSON('/api/wa/nomor-lain', { nomor_lain: $('#waOther').value }).then((x) => x.json());
+  waOtherDirty = false; $('#waOther').value = r.nomor_lain;
+  toast(r.nomor_lain ? '✅ Nomor disimpan' : 'Nomor dikosongkan');
+};
 // ---------- hutang & piutang ----------
 let debtTab = 'hutang', debts = [], debtCur = null;
 const BLN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 const tglP = (iso) => { const [y, m, d] = iso.slice(0, 10).split('-').map(Number); return `${d} ${BLN[m - 1]} ${y}`; };
-const inisial = (n) => n.split(' ').filter(Boolean).slice(-1)[0]?.[0]?.toUpperCase() || '?';
+const inisial = (n) => n.trim()[0]?.toUpperCase() || '?';
 function badgeTempo(h) {
   if (h.lunas) return '<span class="badge ok">Lunas</span>';
   if (!h.jatuh_tempo) return '';
@@ -679,13 +827,16 @@ function refresh() { loadHome(); loadMonth(); loadWA(); loadDebt(); }
 // ---------- navigasi ----------
 function go(p) {
   page = p;
-  for (const id of ['home', 'history', 'report', 'wa', 'debt']) $('#page-' + id).hidden = id !== p;
+  for (const id of ['home', 'history', 'report', 'wa', 'debt', 'admin']) $('#page-' + id).hidden = id !== p;
   $$('nav [data-go]').forEach((b) => b.classList.toggle('on', b.dataset.go === p));
   window.scrollTo(0, 0);
   loadMonth();
   if (p === 'debt') loadDebt();
+  if (p === 'admin') loadUsers();
+  if (p === 'wa') loadWA();
 }
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close]')) hide();
   const tab = e.target.closest('[data-tab]'); if (tab) debtTab = tab.dataset.tab;
   const dt = e.target.closest('[data-dtab]'); if (dt) { debtTab = dt.dataset.dtab; loadDebt(); }
   const d = e.target.closest('[data-debt]'); if (d) openDebt(d.dataset.debt);
@@ -768,8 +919,125 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-refresh();
-setInterval(() => { if (!openSheet) refresh(); }, 5000); // ikut update saat ada catatan baru dari WA
+// ================= Login & akun =================
+let me = null, setupMode = false, timer = null;
+const _fetch = window.fetch.bind(window);
+window.fetch = async (...a) => {
+  const r = await _fetch(...a);
+  if (r.status === 401 && me && !/\/api\/(login|setup|saya)/.test(String(a[0]))) showAuth(); // sesi habis
+  return r;
+};
+
+function showAuth(perluSetup = false) {
+  me = null; setupMode = perluSetup; clearInterval(timer); hide();
+  $('#app').hidden = true; $('#auth').hidden = false;
+  $('#authTitle').textContent = perluSetup ? 'Buat akun admin' : 'Masuk';
+  $('#authSub').textContent = perluSetup ? 'Selamat datang! Buat akun admin pertama.' : 'Masuk untuk melihat keuanganmu';
+  $('#authBtn').textContent = perluSetup ? 'Buat akun & masuk' : 'Masuk';
+  $('#authNamaF').hidden = !perluSetup;
+  $('#authNote').textContent = perluSetup ? 'Data keuangan & WhatsApp yang sudah ada akan menjadi milik akun admin ini.' : 'Belum punya akun? Minta admin untuk membuatkan.';
+  $('#authPass').autocomplete = perluSetup ? 'new-password' : 'current-password';
+  $('#authErr').textContent = '';
+  setTimeout(() => (perluSetup ? $('#authNama') : $('#authUser')).focus(), 50);
+}
+function startApp(user) {
+  me = user;
+  $('#auth').hidden = true; $('#app').hidden = false;
+  const depan = user.nama.split(' ')[0];
+  $('#helloName').textContent = depan;
+  $('#meInit').textContent = inisial(user.nama);
+  $('#meAv').textContent = inisial(user.nama);
+  $('#meName').textContent = user.nama;
+  $('#meUser').textContent = '@' + user.username + (user.role === 'admin' ? ' · Admin' : '');
+  $('#goAdmin').hidden = user.role !== 'admin';
+  go('home'); refresh();
+  clearInterval(timer);
+  timer = setInterval(() => { if (!openSheet) { refresh(); if (page === 'admin') loadUsers(); } }, 5000); // ikut update saat ada catatan dari WA
+}
+$('#pwEye').onclick = () => { const i = $('#authPass'); i.type = i.type === 'password' ? 'text' : 'password'; };
+$('#authForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('#authErr').textContent = ''; $('#authBtn').disabled = true;
+  const body = { username: $('#authUser').value.trim(), password: $('#authPass').value };
+  if (setupMode) body.nama = $('#authNama').value.trim();
+  const r = await postJSON(setupMode ? '/api/setup' : '/api/login', body);
+  const d = await r.json();
+  $('#authBtn').disabled = false;
+  if (!r.ok) { $('#authErr').textContent = d.error || 'Gagal masuk'; return; }
+  $('#authPass').value = '';
+  startApp(d.user);
+});
+
+$('#meBtn').onclick = () => show($('#meSheet'));
+$('#goAdmin').onclick = () => { hide(); go('admin'); };
+$('#logoutBtn').onclick = async () => { await postJSON('/api/logout'); showAuth(false); };
+$('#pwBtn').onclick = () => { hide(); $('#pwOld').value = ''; $('#pwNew').value = ''; setTimeout(() => show($('#pwSheet')), 260); };
+$('#pwSave').onclick = async () => {
+  const r = await postJSON('/api/ganti-password', { lama: $('#pwOld').value, baru: $('#pwNew').value });
+  if (!r.ok) return toast((await r.json()).error || 'Gagal');
+  hide(); toast('🔑 Password diganti. Perangkat lain otomatis keluar.');
+};
+
+// ================= Admin: kelola user =================
+let users = [], uRole = 'user', uCur = null;
+const waLabel = (w) => w.status === 'terhubung' ? `🟢 WA ${w.nomor}` : w.status === 'qr' ? '🟡 menunggu scan' : w.status === 'menyambung' ? '🟡 menyambung' : '⚪ WA belum tertaut';
+async function loadUsers() {
+  const r = await fetch('/api/admin/users');
+  if (!r.ok) return;
+  users = await r.json();
+  $('#userList').innerHTML = users.map((u) => `
+    <button class="user-row" data-user="${u.id}">
+      <span class="avatar">${esc(inisial(u.nama))}</span>
+      <span class="mid"><b>${esc(u.nama)} ${u.role === 'admin' ? '<span class="badge adm">Admin</span>' : ''} ${u.id === me.id ? '<span class="badge ok">Kamu</span>' : ''}</b>
+        <small>@${esc(u.username)} · ${waLabel(u.wa)}</small></span>
+      <span style="color:var(--muted);font-size:20px">›</span>
+    </button>`).join('');
+}
+$('#addUserBtn').onclick = () => {
+  uCur = null; $('#uTitle').textContent = 'Tambah user'; $('#uNewBox').hidden = false; $('#uEditBox').hidden = true;
+  $('#uNama').value = ''; $('#uUser').value = ''; $('#uPass').value = ''; setRole('user');
+  show($('#userSheet')); setTimeout(() => $('#uNama').focus(), 250);
+};
+function setRole(r) { uRole = r; $$('[data-role]').forEach((b) => b.classList.toggle('on', b.dataset.role === r)); }
+$$('[data-role]').forEach((b) => (b.onclick = () => setRole(b.dataset.role)));
+$('#uSave').onclick = async () => {
+  const r = await postJSON('/api/admin/users', { nama: $('#uNama').value, username: $('#uUser').value.trim(), password: $('#uPass').value, role: uRole });
+  const d = await r.json();
+  if (!r.ok) return toast(d.error || 'Gagal');
+  hide(); toast(`✅ User @${d.username} dibuat`); loadUsers();
+};
+function openUser(id) {
+  uCur = users.find((u) => u.id === Number(id)); if (!uCur) return;
+  $('#uTitle').textContent = uCur.nama; $('#uNewBox').hidden = true; $('#uEditBox').hidden = false;
+  $('#uInfo').innerHTML = `
+    <div><span>Username</span><b>@${esc(uCur.username)}</b></div>
+    <div><span>Peran</span><b>${uCur.role === 'admin' ? 'Admin' : 'User'}</b></div>
+    <div><span>WhatsApp</span><b>${esc(waLabel(uCur.wa))}</b></div>
+    <div><span>Saldo</span><b>${rp(uCur.saldo)}</b></div>
+    <div><span>Dibuat</span><b>${tglP(uCur.dibuat)}</b></div>`;
+  $('#uNewPass').value = '';
+  $('#uDel').hidden = uCur.id === me.id;
+  show($('#userSheet'));
+}
+$('#uResetPw').onclick = async () => {
+  const r = await postJSON(`/api/admin/users/${uCur.id}/password`, { password: $('#uNewPass').value });
+  if (!r.ok) return toast((await r.json()).error || 'Gagal');
+  hide(); toast(`🔑 Password @${uCur.username} direset`);
+};
+$('#uDel').onclick = async () => {
+  if (!confirm(`Hapus user @${uCur.username}? SEMUA catatan keuangan, hutang, dan sambungan WhatsApp-nya ikut dihapus dan tidak bisa dikembalikan.`)) return;
+  const r = await fetch('/api/admin/users/' + uCur.id, { method: 'DELETE' });
+  if (!r.ok) return toast((await r.json()).error || 'Gagal');
+  hide(); toast('🗑️ User dihapus'); loadUsers();
+};
+document.addEventListener('click', (e) => { const u = e.target.closest('[data-user]'); if (u) openUser(u.dataset.user); });
+
+// ================= Mulai =================
+(async () => {
+  const r = await _fetch('/api/saya');
+  const d = await r.json();
+  if (r.ok) startApp(d.user); else showAuth(d.perluSetup);
+})();
 </script>
 </body>
 </html>

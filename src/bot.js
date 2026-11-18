@@ -1,11 +1,12 @@
-// Koneksi WhatsApp lewat scan QR (seperti WhatsApp Web), memakai Baileys.
+// Koneksi WhatsApp per user lewat scan QR (seperti WhatsApp Web), memakai Baileys.
+// Setiap user punya sesi sendiri di data/sesi-wa/<userId>/ dan mencatat ke bukunya sendiri.
 import * as Baileys from '@whiskeysockets/baileys';
-import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import pino from 'pino';
 import { join, dirname } from 'node:path';
-import { rmSync } from 'node:fs';
+import { existsSync, readdirSync, renameSync, mkdirSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import * as db from './db.js';
 import { prosesPesan, balasStruk } from './balasan.js';
 import { bacaStruk, aiAktif } from './struk.js';
 
@@ -13,110 +14,156 @@ const B = Baileys.default?.makeWASocket ? Baileys.default : Baileys;
 const makeWASocket = B.makeWASocket || B.default;
 const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } = B;
 
-const AUTH_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'sesi-wa');
-
-// Nomor lain (selain nomor bot sendiri) yang boleh mencatat, mis. "6281234567890,6285..."
-const NOMOR_DIIZINKAN = (process.env.NOMOR_DIIZINKAN || '')
-  .split(',').map((n) => n.replace(/\D/g, '')).filter(Boolean);
-
-export const status = { terhubung: false, nomor: null, qr: null };
-
+const SESI_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'sesi-wa');
+const dirUser = (uid) => join(SESI_DIR, String(uid));
 const nomorDari = (jid = '') => jid.split('@')[0].split(':')[0];
+const MAKS_QR = 6; // ±2 menit menunggu scan, lalu berhenti sampai user menekan "Hubungkan" lagi
 
-export async function mulaiBot() {
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+/** uid -> { sock, status, berhenti } */
+const bots = new Map();
+
+/** Status WhatsApp milik satu user, untuk dashboard. */
+export function statusWA(uid) {
+  const b = bots.get(uid);
+  if (!b) return { status: existsSync(join(dirUser(uid), 'creds.json')) ? 'menyambung' : 'putus', nomor: null, qr: null };
+  return { ...b.status };
+}
+
+/** Sesi lama (sebelum ada fitur multi-user) dipindah ke folder milik admin pertama. */
+export function pindahkanSesiLama(uid) {
+  if (!existsSync(join(SESI_DIR, 'creds.json'))) return false;
+  const sementara = SESI_DIR + '-lama';
+  renameSync(SESI_DIR, sementara);
+  mkdirSync(SESI_DIR, { recursive: true });
+  renameSync(sementara, dirUser(uid));
+  return true;
+}
+
+/** Saat server menyala: sambungkan ulang semua user yang pernah menautkan WhatsApp. */
+export function mulaiSemua() {
+  if (!existsSync(SESI_DIR)) return;
+  for (const nama of readdirSync(SESI_DIR)) {
+    const uid = Number(nama);
+    if (uid && db.ambilUser(uid) && existsSync(join(dirUser(uid), 'creds.json'))) {
+      hubungkan(uid).catch((e) => console.error(`WA user ${uid}:`, e.message));
+    }
+  }
+}
+
+/** Mulai koneksi (menampilkan QR bila belum tertaut). */
+export async function hubungkan(uid) {
+  const lama = bots.get(uid);
+  if (lama && ['terhubung', 'menyambung', 'qr'].includes(lama.status.status)) return statusWA(uid);
+
+  const { state, saveCreds } = await useMultiFileAuthState(dirUser(uid));
   let version;
   try { ({ version } = await fetchLatestBaileysVersion()); } catch { /* pakai bawaan */ }
 
+  const bot = { sock: null, status: { status: 'menyambung', nomor: null, qr: null }, berhenti: false, qrKe: 0, terkirim: new Set() };
+  bots.set(uid, bot);
   const sock = makeWASocket({
-    auth: state,
-    version,
+    auth: state, version,
     logger: pino({ level: 'silent' }),
-    browser: ['Catat Keuangan', 'Chrome', '1.0'],
+    browser: ['Catat Uang', 'Chrome', '1.0'],
     markOnlineOnConnect: false,
   });
-  const terkirim = new Set(); // id pesan balasan bot, agar tidak diproses ulang
-
+  bot.sock = sock;
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
+    if (bot.berhenti) return;
     if (qr) {
-      status.qr = await QRCode.toDataURL(qr);
-      console.log('\n📱 Scan QR ini dengan WhatsApp (Perangkat tertaut → Tautkan perangkat):');
-      qrcodeTerminal.generate(qr, { small: true });
-      console.log('   ...atau buka dashboard di browser untuk scan QR yang lebih jelas.\n');
+      bot.qrKe++;
+      if (bot.qrKe > MAKS_QR) { // tidak di-scan: hentikan supaya tidak berputar terus
+        bot.berhenti = true;
+        bot.status = { status: 'putus', nomor: null, qr: null, pesan: 'QR kedaluwarsa. Tekan "Hubungkan" lagi.' };
+        try { sock.end(undefined); } catch { /* abaikan */ }
+        if (!state.creds.registered) rmSync(dirUser(uid), { recursive: true, force: true });
+        return;
+      }
+      bot.status = { status: 'qr', nomor: null, qr: await QRCode.toDataURL(qr) };
     }
     if (connection === 'open') {
-      status.terhubung = true;
-      status.qr = null;
-      status.nomor = nomorDari(sock.user?.id);
-      console.log(`✅ WhatsApp terhubung sebagai ${status.nomor}`);
-      console.log('   Kirim "bantuan" ke chat dirimu sendiri (Message yourself) untuk mulai.');
+      bot.qrKe = 0;
+      bot.status = { status: 'terhubung', nomor: nomorDari(sock.user?.id), qr: null };
+      console.log(`✅ WhatsApp user ${uid} terhubung sebagai ${bot.status.nomor}`);
     }
     if (connection === 'close') {
-      status.terhubung = false;
       const kode = lastDisconnect?.error?.output?.statusCode;
       if (kode === DisconnectReason.loggedOut) {
-        // Sesi lama tidak berlaku lagi: hapus lalu mulai ulang supaya QR baru muncul.
-        console.log('⚠️  Keluar dari WhatsApp (perangkat dilepas). Menyiapkan QR baru...');
-        status.nomor = null;
-        rmSync(AUTH_DIR, { recursive: true, force: true });
-        setTimeout(() => mulaiBot().catch(console.error), 2000);
+        // Perangkat dilepas dari HP: sesi tidak berlaku lagi
+        console.log(`⚠️  WhatsApp user ${uid} keluar (perangkat dilepas).`);
+        bot.berhenti = true;
+        bot.status = { status: 'putus', nomor: null, qr: null, pesan: 'WhatsApp terputus dari HP. Tekan "Hubungkan" untuk scan ulang.' };
+        rmSync(dirUser(uid), { recursive: true, force: true });
       } else {
-        console.log('🔄 Koneksi terputus, menyambung ulang...');
-        setTimeout(() => mulaiBot().catch(console.error), 3000);
+        bot.status = { ...bot.status, status: 'menyambung', qr: null };
+        bots.delete(uid);
+        setTimeout(() => hubungkan(uid).catch(console.error), 3000);
       }
     }
   });
 
-  sock.ev.on('messages.upsert', async ({ messages, type }) => {
+  sock.ev.on('messages.upsert', ({ messages, type }) => {
     if (type !== 'notify') return;
-    for (const msg of messages) {
-      try {
-        const jid = msg.key.remoteJid || '';
-        if (!msg.message || terkirim.has(msg.key.id)) continue;
-        if (jid.endsWith('@g.us') || jid === 'status@broadcast') continue; // abaikan grup & status
-
-        // Foto dikirim biasa, atau sebagai dokumen bergambar
-        const doc = msg.message.documentMessage;
-        const foto = msg.message.imageMessage || (doc?.mimetype?.startsWith('image/') ? doc : null);
-        const teks = msg.message.conversation
-          || msg.message.extendedTextMessage?.text
-          || foto?.caption
-          || '';
-        if (!teks && !foto) continue;
-
-        const diriSendiri = [sock.user?.id, sock.user?.lid].filter(Boolean).map(nomorDari);
-        const chatDiri = diriSendiri.includes(nomorDari(jid));
-        const pengirimNomor = msg.key.fromMe ? status.nomor : nomorDari(msg.key.senderPn || jid);
-
-        // Boleh: pesan di chat diri sendiri, atau dari nomor yang diizinkan.
-        const boleh = (msg.key.fromMe && chatDiri) || (!msg.key.fromMe && NOMOR_DIIZINKAN.includes(pengirimNomor));
-        if (!boleh) continue;
-
-        const balas = async (text) => {
-          const kirim = await sock.sendMessage(jid, { text }, { quoted: msg });
-          if (kirim?.key?.id) terkirim.add(kirim.key.id);
-        };
-
-        // Caption berisi perintah/transaksi lengkap (mis. "keluar 50rb makan") → catat langsung tanpa AI
-        const dariTeks = teks ? prosesPesan(teks, pengirimNomor) : null;
-        if (dariTeks) { await balas(dariTeks); continue; }
-        if (!foto) continue;
-
-        if (!aiAktif()) {
-          await balas('📷 Fitur baca struk belum aktif: kunci API Anthropic belum dipasang (lihat README, bagian "Foto struk").\n\nCatat manual dulu, mis. *keluar 50rb belanja*.');
-          continue;
-        }
-        await balas('🔎 Sedang membaca struk...');
-        const gambar = await downloadMediaMessage(msg, 'buffer', {}, { reuploadRequest: sock.updateMediaMessage });
-        const hasil = await bacaStruk(gambar, foto.mimetype, teks);
-        await balas(balasStruk(hasil, pengirimNomor, teks));
-      } catch (e) {
-        console.error('Gagal memproses pesan:', e.message);
-      }
-    }
+    for (const msg of messages) prosesMasuk(uid, bot, msg).catch((e) => console.error(`Pesan user ${uid}:`, e.message));
   });
+  return statusWA(uid);
+}
 
-  return sock;
+/** Putuskan WhatsApp: perangkat dilepas dari HP dan sesi dihapus. */
+export async function putuskan(uid) {
+  const bot = bots.get(uid);
+  if (bot) {
+    bot.berhenti = true;
+    try {
+      if (bot.status.status === 'terhubung') await bot.sock.logout();
+      else bot.sock.end(undefined);
+    } catch { /* tetap lanjut hapus sesi */ }
+    bots.delete(uid);
+  }
+  rmSync(dirUser(uid), { recursive: true, force: true });
+  return statusWA(uid);
+}
+
+async function prosesMasuk(uid, bot, msg) {
+  const sock = bot.sock;
+  const jid = msg.key.remoteJid || '';
+  if (!msg.message || bot.terkirim.has(msg.key.id)) return;
+  if (jid.endsWith('@g.us') || jid === 'status@broadcast') return; // abaikan grup & status
+
+  // Foto dikirim biasa, atau sebagai dokumen bergambar
+  const doc = msg.message.documentMessage;
+  const foto = msg.message.imageMessage || (doc?.mimetype?.startsWith('image/') ? doc : null);
+  const teks = msg.message.conversation || msg.message.extendedTextMessage?.text || foto?.caption || '';
+  if (!teks && !foto) return;
+
+  const user = db.ambilUser(uid);
+  if (!user) return;
+  const diriSendiri = [sock.user?.id, sock.user?.lid].filter(Boolean).map(nomorDari);
+  const chatDiri = diriSendiri.includes(nomorDari(jid));
+  const pengirimNomor = msg.key.fromMe ? bot.status.nomor : nomorDari(msg.key.senderPn || jid);
+  const nomorLain = user.nomor_lain ? user.nomor_lain.split(',') : [];
+
+  // Boleh: pesan di chat diri sendiri, atau dari nomor lain yang diizinkan user ini.
+  const boleh = (msg.key.fromMe && chatDiri) || (!msg.key.fromMe && nomorLain.includes(pengirimNomor));
+  if (!boleh) return;
+
+  const balas = async (text) => {
+    const kirim = await sock.sendMessage(jid, { text }, { quoted: msg });
+    if (kirim?.key?.id) bot.terkirim.add(kirim.key.id);
+  };
+
+  // Caption berisi perintah/transaksi lengkap (mis. "keluar 50rb makan") → catat langsung tanpa AI
+  const dariTeks = teks ? prosesPesan(teks, pengirimNomor, uid) : null;
+  if (dariTeks) return balas(dariTeks);
+  if (!foto) return;
+
+  if (!aiAktif()) {
+    return balas('📷 Fitur baca struk belum aktif: kunci API Anthropic belum dipasang (lihat README, bagian "Foto struk").\n\nCatat manual dulu, mis. *keluar 50rb belanja*.');
+  }
+  await balas('🔎 Sedang membaca struk...');
+  const gambar = await downloadMediaMessage(msg, 'buffer', {}, { reuploadRequest: sock.updateMediaMessage });
+  const hasil = await bacaStruk(gambar, foto.mimetype, teks);
+  await balas(balasStruk(hasil, pengirimNomor, teks, uid));
 }
