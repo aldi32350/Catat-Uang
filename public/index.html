@@ -596,6 +596,12 @@
     <button data-q="100000">100rb</button><button data-q="500000">500rb</button><button data-q="1000000">1jt</button>
   </div>
   <label class="field"><small>Keterangan</small><input id="note" placeholder="mis. makan siang, bensin, gaji" maxlength="200"></label>
+  <button type="button" class="field date-field" data-dp-for="txDate" style="margin-top:10px">
+    <small>Tanggal</small>
+    <span class="date-val"><span data-dp-text="txDate" class="ph">Hari ini</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
+  </button>
+  <input type="hidden" id="txDate" data-dp data-dp-title="Tanggal transaksi" data-dp-mode="lalu">
   <button class="primary" id="save" disabled>Simpan</button>
 </div>
 
@@ -761,12 +767,7 @@
     <div><small id="dpTitle">Pilih tanggal</small><b id="dpSel">Belum dipilih</b></div>
     <button type="button" class="dp-x" id="dpClose" aria-label="Tutup">✕</button>
   </div>
-  <div class="dp-quick" id="dpQuick">
-    <button type="button" data-dp-q="1d">Besok</button><button type="button" data-dp-q="7d">1 minggu</button>
-    <button type="button" data-dp-q="14d">2 minggu</button><button type="button" data-dp-q="1m">1 bulan</button>
-    <button type="button" data-dp-q="3m">3 bulan</button><button type="button" data-dp-q="6m">6 bulan</button>
-    <button type="button" data-dp-q="12m">1 tahun</button>
-  </div>
+  <div class="dp-quick" id="dpQuick"></div>
   <div class="dp-nav">
     <button type="button" class="dp-arrow" id="dpPrev" aria-label="Sebelumnya">‹</button>
     <button type="button" class="dp-month" id="dpMonth" aria-label="Pilih bulan & tahun"></button>
@@ -1191,7 +1192,7 @@ function syncAmt() {
   $('#save').disabled = !v;
 }
 function openAdd(type) {
-  setType(type); $('#amt').value = ''; $('#note').value = ''; syncAmt();
+  setType(type); $('#amt').value = ''; $('#note').value = ''; $('#txDate').value = isoDari(hariIni()); syncAmt();
   show($('#addSheet'));
   setTimeout(() => $('#amt').focus(), 250);
 }
@@ -1202,7 +1203,7 @@ $('#note').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('#sa
 $('#save').onclick = async () => {
   $('#save').disabled = true;
   const r = await fetch('/api/transaksi', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tipe: addType, jumlah: amtValue(), keterangan: $('#note').value }) });
+    body: JSON.stringify({ tipe: addType, jumlah: amtValue(), keterangan: $('#note').value, tanggal: $('#txDate').value || null }) });
   if (!r.ok) { toast('Gagal menyimpan'); $('#save').disabled = false; return; }
   hide(); toast(addType === 'masuk' ? '✅ Uang masuk tercatat' : '✅ Uang keluar tercatat'); refresh();
 };
@@ -1284,6 +1285,7 @@ function teksRelatif(iso) {
   const n = Math.round((tglDari(iso) - hariIni()) / 864e5);
   if (n === 0) return 'hari ini';
   if (n === 1) return 'besok';
+  if (n === -1) return 'kemarin';
   if (n < 0) return `${-n} hari lalu`;
   if (n < 60) return `${n} hari lagi`;
   const bln = Math.round(n / 30.4);
@@ -1306,13 +1308,19 @@ $$('input[data-dp]').forEach((el) => {
   tulisKolomTanggal(el);
 });
 
-const dp = { input: null, sel: '', view: null, mode: 'hari' };
+const dp = { input: null, sel: '', view: null, mode: 'hari', lalu: false };
+// Tombol cepat: untuk tanggal transaksi (ke belakang) dan untuk tenggat (ke depan)
+const CEPAT_LALU = [['0d', 'Hari ini'], ['-1d', 'Kemarin'], ['-2d', '2 hari lalu'], ['-3d', '3 hari lalu'], ['-7d', '1 minggu lalu'], ['-1m', '1 bulan lalu']];
+const CEPAT_DEPAN = [['0d', 'Hari ini'], ['1d', 'Besok'], ['7d', '1 minggu'], ['14d', '2 minggu'], ['1m', '1 bulan'], ['3m', '3 bulan'], ['6m', '6 bulan'], ['12m', '1 tahun']];
 function dpBuka(input) {
   dp.input = input;
   dp.sel = input.value || '';
   const awal = dp.sel ? tglDari(dp.sel) : hariIni();
   dp.view = new Date(awal.getFullYear(), awal.getMonth(), 1);
   dp.mode = 'hari';
+  dp.lalu = input.dataset.dpMode === 'lalu'; // tanggal transaksi: tidak boleh di masa depan
+  $('#dpQuick').innerHTML = (dp.lalu ? CEPAT_LALU : CEPAT_DEPAN).map(([k, t]) => `<button type="button" data-dp-q="${k}">${t}</button>`).join('');
+  $('#dpClear').hidden = dp.lalu;
   $('#dpTitle').textContent = input.dataset.dpTitle || 'Pilih tanggal';
   dpGambar();
   $('#dpScrim').classList.add('show'); $('#dp').classList.add('show');
@@ -1336,17 +1344,19 @@ function dpGambar() {
   $('#dpMonths').hidden = dp.mode !== 'bulan';
   if (dp.mode === 'bulan') {
     $('#dpMonth').textContent = String(y);
-    $('#dpPrev').disabled = y <= t0.getFullYear();
+    $('#dpPrev').disabled = false;
+    $('#dpNext').disabled = dp.lalu && y >= t0.getFullYear();
     const selD = dp.sel ? tglDari(dp.sel) : null;
     $('#dpMonths').innerHTML = NAMA_BULAN.map((n, i) => {
-      const lewat = y < t0.getFullYear() || (y === t0.getFullYear() && i < t0.getMonth());
+      const lewat = dp.lalu && (y > t0.getFullYear() || (y === t0.getFullYear() && i > t0.getMonth()));
       const on = (selD && selD.getFullYear() === y && selD.getMonth() === i) || (!selD && y === dp.view.getFullYear() && i === m);
       return `<button type="button" data-dp-m="${i}" class="${on ? 'sel' : ''}" ${lewat ? 'disabled' : ''}>${n.slice(0, 3)}</button>`;
     }).join('');
     return;
   }
   $('#dpMonth').textContent = `${NAMA_BULAN[m]} ${y}`;
-  $('#dpPrev').disabled = y < t0.getFullYear() || (y === t0.getFullYear() && m <= t0.getMonth());
+  $('#dpPrev').disabled = false;
+  $('#dpNext').disabled = dp.lalu && (y > t0.getFullYear() || (y === t0.getFullYear() && m >= t0.getMonth()));
   const mulai = new Date(y, m, 1 - ((new Date(y, m, 1).getDay() + 6) % 7)); // Senin pertama di grid
   let html = '';
   for (let i = 0; i < 42; i++) {
@@ -1354,7 +1364,7 @@ function dpGambar() {
     const iso = isoDari(d);
     const kls = [d.getMonth() !== m && 'lain', (d.getDay() === 0 || d.getDay() === 6) && 'we',
       +d === +t0 && 'today', iso === dp.sel && 'sel'].filter(Boolean).join(' ');
-    html += `<button type="button" data-dp-d="${iso}" class="${kls}" ${d < t0 ? 'disabled' : ''}
+    html += `<button type="button" data-dp-d="${iso}" class="${kls}" ${dp.lalu && d > t0 ? 'disabled' : ''}
       aria-label="${teksPanjang(iso)}" aria-pressed="${iso === dp.sel}">${d.getDate()}</button>`;
   }
   $('#dpGrid').innerHTML = html;
@@ -1534,6 +1544,22 @@ $('#uDel').onclick = async () => {
   hide(); toast('🗑️ User dihapus'); loadUsers();
 };
 document.addEventListener('click', (e) => { const u = e.target.closest('[data-user]'); if (u) openUser(u.dataset.user); });
+
+// ================= Pembaruan otomatis =================
+// Bila tampilan diperbarui di server, muat ulang sendiri (hanya saat tidak ada form/lembar terbuka).
+let versiAwal = null, adaVersiBaru = false;
+async function cekVersi() {
+  try {
+    const { v } = await _fetch('/api/versi').then((x) => x.json());
+    if (versiAwal === null) versiAwal = v;
+    else if (v !== versiAwal) adaVersiBaru = true;
+  } catch { /* server mati sebentar */ }
+  const sibuk = openSheet || $('#dp').classList.contains('show') || $('#cf').classList.contains('show')
+    || (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName));
+  if (adaVersiBaru && !sibuk) location.reload();
+}
+cekVersi();
+setInterval(cekVersi, 10000);
 
 // ================= Mulai =================
 (async () => {

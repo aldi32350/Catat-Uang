@@ -1,6 +1,6 @@
 // Dashboard web (tanpa framework) dengan login, data per user, dan menu admin.
 import http from 'node:http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as db from './db.js';
@@ -57,6 +57,8 @@ export function mulaiWeb({ port, host, wa }) {
         return res.end(readFileSync(join(dirname(HTML), p.slice(1))));
       }
       if (!p.startsWith('/api/')) return json(res, 404, { error: 'Tidak ditemukan' });
+      // Versi tampilan: berubah setiap index.html diperbarui → browser memuat ulang sendiri
+      if (M === 'GET' && p === '/api/versi') return json(res, 200, { v: Math.round(statSync(HTML).mtimeMs) });
 
       // Perubahan data hanya lewat JSON (melindungi dari form lintas situs).
       if (M !== 'GET' && M !== 'DELETE' && !String(req.headers['content-type'] || '').includes('application/json')) {
@@ -155,7 +157,15 @@ export function mulaiWeb({ port, host, wa }) {
         const jumlah = Math.round(Number(b.jumlah));
         if (!['masuk', 'keluar'].includes(b.tipe) || !(jumlah > 0)) return json(res, 400, { error: 'Tipe atau jumlah tidak valid' });
         const keterangan = String(b.keterangan || '').trim().slice(0, 200) || (b.tipe === 'masuk' ? 'Pemasukan' : 'Pengeluaran');
-        return json(res, 201, db.tambah({ uid, tipe: b.tipe, jumlah, keterangan, kategori: tebakKategori(keterangan, b.tipe), pengirim: 'web' }));
+        // Tanggal transaksi (boleh mundur kalau lupa mencatat), tidak boleh di masa depan.
+        let dibuat;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(b.tanggal || '')) {
+          const t = new Date(), pad = (n) => String(n).padStart(2, '0');
+          const hariIni = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+          if (b.tanggal > hariIni) return json(res, 400, { error: 'Tanggal tidak boleh di masa depan' });
+          if (b.tanggal < hariIni) dibuat = `${b.tanggal} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+        }
+        return json(res, 201, db.tambah({ uid, tipe: b.tipe, jumlah, keterangan, kategori: tebakKategori(keterangan, b.tipe), pengirim: 'web', dibuat }));
       }
       const mHapus = p.match(/^\/api\/transaksi\/(\d+)$/);
       if (M === 'DELETE' && mHapus) return json(res, db.hapus(Number(mHapus[1]), uid) ? 200 : 404, {});
