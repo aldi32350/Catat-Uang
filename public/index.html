@@ -1175,7 +1175,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); })
 let addType = 'keluar';
 function setType(t) {
   addType = t;
-  $$('.seg button').forEach((b) => b.classList.toggle('on', b.dataset.type === t));
+  $$('.seg button[data-type]').forEach((b) => b.classList.toggle('on', b.dataset.type === t));
 }
 function amtValue() { return Number($('#amt').value.replace(/\D/g, '')) || 0; }
 function terbilang(n) {
@@ -1196,7 +1196,7 @@ function openAdd(type) {
   show($('#addSheet'));
   setTimeout(() => $('#amt').focus(), 250);
 }
-$$('.seg button').forEach((b) => (b.onclick = () => setType(b.dataset.type)));
+$$('.seg button[data-type]').forEach((b) => (b.onclick = () => setType(b.dataset.type)));
 $('#amt').addEventListener('input', syncAmt);
 $$('[data-q]').forEach((b) => (b.onclick = () => { $('#amt').value = String(amtValue() + Number(b.dataset.q)); syncAmt(); }));
 $('#note').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('#save').disabled) $('#save').click(); });
