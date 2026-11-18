@@ -1,0 +1,21 @@
+# Catat Uang di VPS (/opt/catat-uang).
+# Ikut jaringan Caddy yang sudah ada, jadi tidak membuka port baru:
+# Caddy meneruskan domain → catat-uang:3000 dan mengurus HTTPS.
+services:
+  catat-uang:
+    build: .
+    image: catat-uang:latest
+    container_name: catat-uang
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data
+    networks: [proxy]
+    mem_limit: 700m
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK:-laporan_default}
+    external: true

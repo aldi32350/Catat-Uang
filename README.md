@@ -100,3 +100,22 @@ Mode hanya dashboard tanpa WhatsApp: `npm run web`. Untuk menjalankan tes: `npm 
 - Koneksi WhatsApp memakai **Baileys** (cara tidak resmi, seperti WhatsApp Web). Gratis, tapi ada risiko kecil nomor diblokir WhatsApp. Lebih aman pakai **nomor cadangan** sebagai nomor bot.
 - Bot hanya membalas chat ke diri sendiri di nomor yang tertaut. Chat dengan orang lain dan grup diabaikan.
 - Password disimpan ter-hash (scrypt), sesi login berlaku 30 hari. Untuk dibuka dari internet, tetap pasang HTTPS (mis. lewat reverse proxy) agar password tidak terkirim polos.
+
+## Menjalankan di VPS (Docker)
+
+Folder ini sudah berisi `Dockerfile` dan `docker-compose.yml`. Container bergabung ke jaringan Docker milik reverse proxy (default `laporan_default`, ubah dengan `PROXY_NETWORK`) sehingga tidak perlu membuka port baru. Reverse proxy (mis. Caddy) meneruskan domain ke `catat-uang:3000` dan mengurus HTTPS.
+
+```bash
+docker compose up -d --build
+```
+
+- Data (database, sesi WhatsApp, data OCR) tersimpan di `./data` di VPS dan tidak ikut tertimpa saat update.
+- Zona waktu container: `Asia/Jakarta` (WIB).
+- Contoh blok Caddy:
+  ```
+  catat.domainku.com {
+  	encode gzip
+  	reverse_proxy catat-uang:3000
+  }
+  ```
+- **Jangan** menjalankan server yang sama di komputer lain dengan sesi WhatsApp yang sama: pesan akan tercatat dua kali.
