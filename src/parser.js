@@ -48,6 +48,90 @@ export function tebakKategori(keterangan, tipe) {
   return tipe === 'masuk' ? 'Pemasukan Lain' : 'Lainnya';
 }
 
+// ======================= Hutang & piutang =======================
+
+const GELAR = '(?:pak|bu|bang|mas|mbak|mba|kak|om|tante|teh|a|bude|pakde|bi|mang|cak|ning)';
+const RE_TEMPO = /\b(?:jatuh\s+tempo|tempo|jt\s+tempo|deadline)\s+(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?/i;
+const judul = (s) => s.replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+
+/** "25/12" → '2026-12-25' (tahun depan jika tanggal itu sudah lewat). */
+export function bacaTempo(teks, sekarang = new Date()) {
+  const m = teks.match(RE_TEMPO);
+  if (!m) return { tempo: null, sisa: teks };
+  const [, d, b, t] = m.map(Number);
+  let tahun = t ? (t < 100 ? 2000 + t : t) : sekarang.getFullYear();
+  const hariIni = new Date(sekarang.getFullYear(), sekarang.getMonth(), sekarang.getDate());
+  if (!t && new Date(tahun, b - 1, d) < hariIni) tahun++;
+  const tgl = new Date(tahun, b - 1, d);
+  if (tgl.getMonth() !== b - 1 || b < 1 || b > 12) return { tempo: null, sisa: teks.replace(m[0], ' ') };
+  const iso = `${tahun}-${String(b).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  return { tempo: iso, sisa: teks.replace(m[0], ' ') };
+}
+
+/** Memisahkan nama orang & keterangan. Nama diambil setelah ke/dari/sama, atau kata pertama. */
+function pisahNama(teks) {
+  const t = teks.replace(/\s+/g, ' ').trim();
+  const reNama = `(${GELAR}\\s+)?([\\p{L}][\\p{L}'-]*)`;
+  let m = t.match(new RegExp(`(?:^|\\s)(?:ke|dari|sama|ama|kepada|pada)\\s+${reNama}`, 'iu'));
+  if (!m) m = t.match(new RegExp(`^${reNama}`, 'iu'));
+  if (!m) return { nama: '', keterangan: t };
+  const nama = judul(((m[1] || '') + m[2]).trim().toLowerCase());
+  const keterangan = t.replace(m[0], ' ').replace(/\s+/g, ' ').trim()
+    .replace(/^(untuk|buat|utk|karena|krn)\s+/i, '');
+  return { nama, keterangan };
+}
+
+/**
+ * Hasil:
+ *  { jenis: 'hutang-baru', tipe: 'hutang'|'piutang', nama, jumlah, keterangan, tempo }
+ *  { jenis: 'hutang-bayar', tipe, nama, jumlah: number|null (null = lunasi) }
+ *  { jenis: 'perintah', nama: 'daftar-hutang', filter: 'hutang'|'piutang'|null }
+ */
+export function uraiHutang(pesan) {
+  const teks = (pesan || '').trim().replace(/\s+/g, ' ').replace(/^[/!.#]/, '');
+  const k = teks.toLowerCase().replace(/\butang\b/g, 'hutang');
+
+  const daftar = k.match(/^(?:daftar |cek |lihat )?(hutang|piutang|hutang ?piutang|hutang & piutang|hutang dan piutang)$/);
+  if (daftar) {
+    const f = daftar[1] === 'hutang' ? 'hutang' : daftar[1] === 'piutang' ? 'piutang' : null;
+    return { jenis: 'perintah', nama: 'daftar-hutang', filter: f };
+  }
+
+  // Bayar hutang / terima piutang
+  let bayar = k.match(/^(bayar|cicil|lunasi|lunas) hutang (.+)$/);
+  let tipe = 'hutang';
+  if (!bayar) { bayar = k.match(/^(terima|lunasi|lunas|tagih) piutang (.+)$/); tipe = 'piutang'; }
+  if (!bayar) {
+    const m = k.match(/^piutang (.+?) (?:dibayar|bayar|lunas|nyicil|cicil)(.*)$/);
+    if (m) { bayar = [null, /lunas/.test(k) && !bacaJumlah(m[2]) ? 'lunas' : 'bayar', `${m[1]} ${m[2]}`]; tipe = 'piutang'; }
+  }
+  if (bayar) {
+    let sisa = bayar[2];
+    const lunas = /\blunas\b/.test(sisa) || ['lunasi', 'lunas'].includes(bayar[1]);
+    sisa = sisa.replace(/\blunas\b/g, ' ');
+    const j = bacaJumlah(sisa);
+    if (j) sisa = sisa.replace(j.cocok, ' ');
+    const { nama } = pisahNama(sisa);
+    if (!nama) return null;
+    if (!j && !lunas) return { jenis: 'hutang-bayar', tipe, nama, jumlah: undefined }; // minta jumlah
+    return { jenis: 'hutang-bayar', tipe, nama, jumlah: j && !(lunas && !j) ? j.nilai : null };
+  }
+
+  // Hutang / piutang baru
+  let baru = k.match(/^(hutang|pinjam|minjam|ngutang) (.+)$/);
+  tipe = 'hutang';
+  if (!baru) { baru = k.match(/^(piutang|pinjamkan|pinjami|minjemin|ngutangin|kasih pinjam|meminjamkan) (.+)$/); tipe = 'piutang'; }
+  if (!baru) return null;
+  // Ambil dari teks asli (bukan huruf kecil) supaya keterangan tetap rapi
+  const asli = teks.split(' ').slice(baru[1].split(' ').length).join(' ');
+  const { tempo, sisa: tanpaTempo } = bacaTempo(asli);
+  const j = bacaJumlah(tanpaTempo);
+  if (!j) return null;
+  const { nama, keterangan } = pisahNama(tanpaTempo.replace(j.cocok, ' '));
+  if (!nama) return null;
+  return { jenis: 'hutang-baru', tipe, nama, jumlah: j.nilai, keterangan, tempo };
+}
+
 /**
  * Hasil:
  *  { jenis: 'transaksi', tipe, jumlah, keterangan, kategori }
