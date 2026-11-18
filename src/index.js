@@ -1,6 +1,7 @@
 import { mulaiWeb } from './web.js';
 
-const PORT = Number(process.env.PORT || 3000);
+const argPort = process.argv.find((a) => a.startsWith('--port='))?.slice(7);
+const PORT = Number(argPort || process.env.PORT || 3000);
 // Default hanya bisa dibuka dari komputer ini. Set HOST=0.0.0.0 agar bisa dibuka dari HP di Wi-Fi yang sama.
 const HOST = process.env.HOST || '127.0.0.1';
 const tanpaWA = process.argv.includes('--tanpa-wa');
