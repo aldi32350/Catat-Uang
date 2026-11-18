@@ -276,6 +276,14 @@
   .am-scrim.show { opacity: 1; pointer-events: auto; }
   .pindah-panah { text-align: center; font-size: 22px; color: var(--muted); margin: 4px 0 -4px; }
 
+  /* ---------- logo bank / e-wallet ---------- */
+  .ai.ada-logo { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+  .logo-akun { width: 26px; height: 26px; object-fit: contain; border-radius: 6px; display: block; }
+  .logo-besar { width: 40px; height: 40px; object-fit: contain; border-radius: 10px; display: block; }
+  .logo-chip { width: 18px; height: 18px; object-fit: contain; border-radius: 4px; display: block; }
+  .logo-preset { width: 26px; height: 26px; object-fit: contain; border-radius: 6px; display: block; margin: 0 auto; }
+  .logo-mini { width: 14px; height: 14px; object-fit: contain; border-radius: 3px; vertical-align: -2px; display: inline-block; }
+
   /* ---------- whatsapp ---------- */
   .wa-card { padding: 14px 16px; margin-bottom: 12px; }
   .wa-head { display: flex; gap: 12px; align-items: center; }
@@ -927,7 +935,7 @@ function txRow(t) {
   const pos = t.tipe === 'masuk';
   return `<button class="tx" data-id="${t.id}">
     <span class="ic">${ic(t.kategori)}</span>
-    <span class="mid"><b>${esc(t.keterangan)}</b><small>${esc(t.kategori)} · ${t.dibuat.slice(11, 16)}${t.akun_nama ? ' · ' + IKON_AKUN[t.akun_jenis || 'lainnya'] + ' ' + esc(t.akun_nama) : ''}${t.pengirim !== 'web' ? ' · WA' : ''}</small></span>
+    <span class="mid"><b>${esc(t.keterangan)}</b><small>${esc(t.kategori)} · ${t.dibuat.slice(11, 16)}${t.akun_nama ? ' · ' + ikonAkun(t.akun_nama, t.akun_jenis, 'logo-mini') + ' ' + esc(t.akun_nama) : ''}${t.pengirim !== 'web' ? ' · WA' : ''}</small></span>
     <span class="rt"><b class="${pos ? 'plus' : 'minus'}">${pos ? '+' : '−'}${rp(t.jumlah)}</b><small>Saldo ${rp(t.saldoSetelah)}</small></span>
   </button>`;
 }
@@ -1322,7 +1330,7 @@ function openDetail(t) {
   $('#dTime').textContent = new Date(t.dibuat.replace(' ', 'T')).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
   $('#dVia').textContent = t.pengirim === 'web' ? 'Aplikasi' : 'WhatsApp';
   $('#dBal').textContent = rp(t.saldoSetelah);
-  $('#dAkunTx').textContent = t.akun_nama ? `${IKON_AKUN[t.akun_jenis || 'lainnya']} ${t.akun_nama}` : '—';
+  $('#dAkunTx').innerHTML = t.akun_nama ? `${ikonAkun(t.akun_nama, t.akun_jenis, 'logo-mini')} ${esc(t.akun_nama)}` : '—';
   show($('#detailSheet'));
 }
 $('#del').onclick = async () => {
@@ -1341,6 +1349,24 @@ function toast(msg) {
 
 // ================= Sumber dana (tunai / bank / e-wallet) =================
 const IKON_AKUN = { tunai: '💵', bank: '🏦', ewallet: '📱', lainnya: '💳' };
+// Logo bank / e-wallet: ikon situs resminya lewat layanan favicon Google (dimuat oleh browser, tidak disimpan di aplikasi)
+// BTN, CIMB Niaga, LinkAja tidak punya logo di layanan Google → tetap ikon jenis (lebih rapi dari ikon bola dunia)
+const SITUS_AKUN = [
+  [/\bbca\b/, "www.bca.co.id"], [/\bbri\b|brimo/, "bri.co.id"], [/\bbni\b/, "bni.co.id"], [/mandiri|livin/, "bankmandiri.co.id"],
+  [/\bbsi\b/, "bankbsi.co.id"], [/permata/, "permatabank.com"], [/\bjago\b/, "jago.com"], [/seabank|sea bank/, "www.seabank.co.id"],
+  [/\bblu\b/, "blubybcadigital.id"], [/\bdana\b/, "dana.id"], [/go\s*-?pay/, "gopay.co.id"], [/\bovo\b/, "ovo.id"], [/shopee/, "shopeepay.co.id"],
+];
+function logoAkun(nama) {
+  const n = String(nama || '').toLowerCase();
+  const hit = SITUS_AKUN.find(([re]) => re.test(n));
+  return hit ? `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${hit[1]}&size=128` : null;
+}
+/** Logo (bila bank/e-wallet dikenal) atau ikon jenisnya. */
+function ikonAkun(nama, jenis, kelas = 'logo-akun') {
+  const e = IKON_AKUN[jenis || 'lainnya'] || '💳';
+  const u = logoAkun(nama);
+  return u ? `<img class="${kelas}" src="${u}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('${e}'))">` : e;
+}
 const NAMA_JENIS = { tunai: 'Tunai', bank: 'Rekening bank', ewallet: 'E-wallet', lainnya: 'Lainnya' };
 let akuns = [], presetAkun = [], akunCur = null;
 
@@ -1352,7 +1378,7 @@ async function loadAkun() {
   $('#akunRow').innerHTML = akuns.map((a) => `
     <button class="akun-card" data-akun-id="${a.id}">
       ${a.utama ? '<span class="utama">UTAMA</span>' : ''}
-      <span class="ai ${a.jenis}">${IKON_AKUN[a.jenis]}</span>
+      <span class="ai ${a.jenis}${logoAkun(a.nama) ? ' ada-logo' : ''}">${ikonAkun(a.nama, a.jenis)}</span>
       <b>${esc(a.nama)}</b>
       <span class="sal money ${a.saldo < 0 ? 'minus' : ''}" data-v="${a.saldo}">${rp(a.saldo)}</span>
     </button>`).join('') + '<button class="akun-card add" id="akunTambahCard">＋<br>Tambah</button>';
@@ -1368,7 +1394,7 @@ function chipsAkun(el, sel, opsi = {}) {
   const pilih = akuns.some((a) => a.id === sel) ? sel : (opsi.kecuali === utama?.id ? akuns.find((a) => a.id !== opsi.kecuali)?.id : utama?.id);
   el.dataset.sel = pilih ?? '';
   if (opsi.kecuali !== undefined) el.dataset.kecuali = opsi.kecuali;
-  el.innerHTML = akuns.map((a) => `<button type="button" data-chip-akun="${a.id}" class="${a.id === pilih ? 'on' : ''}">${IKON_AKUN[a.jenis]} ${esc(a.nama)}</button>`).join('')
+  el.innerHTML = akuns.map((a) => `<button type="button" data-chip-akun="${a.id}" class="${a.id === pilih ? 'on' : ''}">${ikonAkun(a.nama, a.jenis, 'logo-chip')} ${esc(a.nama)}</button>`).join('')
     + '<button type="button" class="tambah" data-chip-tambah>＋ Tambah</button>';
 }
 const akunTerpilih = (el) => Number(el?.dataset.sel) || null;
@@ -1399,7 +1425,7 @@ function bukaFormAkun(akun, wadahChips) {
   $('#amPreset').hidden = Boolean(akun);
   const punya = new Set(akuns.map((a) => a.nama.toLowerCase()));
   $('#amPreset').innerHTML = presetAkun.map((p) => `<button type="button" data-preset="${esc(p.nama)}" data-pj="${p.jenis}" ${punya.has(p.nama.toLowerCase()) ? 'disabled title="Sudah ada"' : ''}>
-    <span>${IKON_AKUN[p.jenis]}</span>${esc(p.nama)}</button>`).join('');
+    <span>${ikonAkun(p.nama, p.jenis, 'logo-preset')}</span>${esc(p.nama)}</button>`).join('');
   $('#amNama').value = akun ? akun.nama : '';
   setAmJenis(akun ? akun.jenis : 'lainnya');
   $('#amSimpan').disabled = !akun;
@@ -1439,7 +1465,7 @@ async function bukaDetailAkun(id) {
   const a = akuns.find((x) => x.id === id);
   if (!a) return;
   akunCur = a;
-  $('#adIc').className = 'ai ' + a.jenis; $('#adIc').textContent = IKON_AKUN[a.jenis];
+  $('#adIc').className = 'ai ' + a.jenis + (logoAkun(a.nama) ? ' ada-logo' : ''); $('#adIc').innerHTML = ikonAkun(a.nama, a.jenis, 'logo-besar');
   $('#adNama').textContent = a.nama;
   $('#adJenis').textContent = NAMA_JENIS[a.jenis] + (a.utama ? ' · sumber utama' : '');
   $('#adSaldo').textContent = rp(a.saldo);
