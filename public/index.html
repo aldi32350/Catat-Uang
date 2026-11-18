@@ -239,6 +239,43 @@
   .dp-clear { padding: 0 16px; border-radius: 16px; font-weight: 700; color: var(--red); background: var(--red-bg); }
   .dp-ok { margin-top: 0 !important; }
 
+  /* ---------- sumber dana ---------- */
+  .akun-row { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 8px; scrollbar-width: none; }
+  .akun-row::-webkit-scrollbar { display: none; }
+  .akun-card { flex: none; width: 150px; text-align: left; background: var(--card); border-radius: 18px; box-shadow: var(--shadow);
+    padding: 12px 14px; position: relative; }
+  .akun-card .ai { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 19px; margin-bottom: 8px; }
+  .akun-card b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .akun-card .sal { font-weight: 800; font-size: 15.5px; margin-top: 2px; white-space: nowrap; }
+  .akun-card .utama { position: absolute; top: 10px; right: 10px; font-size: 10.5px; font-weight: 800; color: var(--brand); background: #e5efff; padding: 2px 7px; border-radius: 99px; }
+  html[data-theme="dark"] .akun-card .utama { background: #13294a; color: #6fb0ff; }
+  .akun-card.add { display: grid; place-items: center; text-align: center; color: var(--brand); font-weight: 800; border: 2px dashed var(--line); box-shadow: none; background: transparent; width: 110px; }
+  html[data-theme="dark"] .akun-card.add { color: #6fb0ff; }
+  .ai.tunai { background: #e3f7ee; } .ai.bank { background: #e5efff; } .ai.ewallet { background: #f1e8ff; } .ai.lainnya { background: #fff3dc; }
+  html[data-theme="dark"] .ai.tunai { background: #11291f; } html[data-theme="dark"] .ai.bank { background: #13294a; }
+  html[data-theme="dark"] .ai.ewallet { background: #2a1d45; } html[data-theme="dark"] .ai.lainnya { background: #33280f; }
+  .akun-pilih { margin-top: 12px; }
+  .akun-pilih > small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .akun-chips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -18px; padding: 2px 18px 4px; scrollbar-width: none; }
+  .akun-chips::-webkit-scrollbar { display: none; }
+  .akun-chips button { flex: none; display: flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: 99px; background: var(--chip);
+    font-weight: 700; font-size: 14px; border: 2px solid transparent; }
+  .akun-chips button.on { border-color: var(--brand); background: var(--card); color: var(--brand); }
+  html[data-theme="dark"] .akun-chips button.on { color: #6fb0ff; border-color: #6fb0ff; }
+  .akun-chips button.tambah { color: var(--brand); background: transparent; border: 2px dashed var(--line); }
+  .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 240px; overflow-y: auto; margin: 12px 0; }
+  .preset-grid button { padding: 10px 6px; border-radius: 14px; background: var(--chip); font-weight: 700; font-size: 13.5px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .preset-grid button span { font-size: 18px; }
+  .preset-grid button:disabled { opacity: .35; }
+  .preset-grid button.on { outline: 2px solid var(--brand); background: var(--card); }
+  .am { position: fixed; left: 50%; bottom: 0; width: 100%; max-width: 440px; transform: translate(-50%, 105%); z-index: 46;
+    transition: transform .25s cubic-bezier(.2,.8,.2,1); background: var(--card); border-radius: 24px 24px 0 0;
+    padding: 10px 18px calc(18px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,.2); max-height: 92vh; overflow-y: auto; }
+  .am.show { transform: translate(-50%, 0); }
+  .am-scrim { position: fixed; inset: 0; background: rgba(10,12,30,.5); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 45; }
+  .am-scrim.show { opacity: 1; pointer-events: auto; }
+  .pindah-panah { text-align: center; font-size: 22px; color: var(--muted); margin: 4px 0 -4px; }
+
   /* ---------- whatsapp ---------- */
   .wa-card { padding: 14px 16px; margin-bottom: 12px; }
   .wa-head { display: flex; gap: 12px; align-items: center; }
@@ -451,6 +488,10 @@
 
     <main>
       <div class="sec">
+        <div class="sec-head" style="margin-top:-4px"><h2>Sumber dana</h2><button class="link" id="pindahBtn">🔁 Pindah saldo</button></div>
+        <div class="akun-row" id="akunRow"></div>
+      </div>
+      <div class="sec">
         <button class="promo" data-go="wa" style="width:100%;text-align:left">
           <span class="em"><img src="/wa.svg" alt="WhatsApp" class="wa-logo"></span>
           <span><b>Catat lewat WhatsApp</b><small>Ketik "keluar 25rb makan" ke chat dirimu sendiri</small></span>
@@ -602,6 +643,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
   </button>
   <input type="hidden" id="txDate" data-dp data-dp-title="Tanggal transaksi" data-dp-mode="lalu">
+  <div class="akun-pilih"><small id="txAkunLbl">Bayar pakai</small><div class="akun-chips" id="txAkun"></div></div>
   <button class="primary" id="save" disabled>Simpan</button>
 </div>
 
@@ -616,6 +658,7 @@
     <div><span>Kategori</span><b id="dCat"></b></div>
     <div><span>Waktu</span><b id="dTime"></b></div>
     <div><span>Dicatat lewat</span><b id="dVia"></b></div>
+    <div><span>Sumber dana</span><b id="dAkunTx"></b></div>
     <div><span>Saldo setelahnya</span><b id="dBal"></b></div>
   </div>
   <button class="danger" id="del">Hapus transaksi</button>
@@ -636,6 +679,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
   </button>
   <input type="hidden" id="dDueIn" data-dp data-dp-title="Jatuh tempo">
+  <div class="akun-pilih"><small id="dAkunLbl">Uang masuk ke</small><div class="akun-chips" id="dAkun"></div></div>
   <p class="note-small" id="dEffect"></p>
   <button class="primary" id="dSave" disabled>Simpan</button>
 </div>
@@ -656,6 +700,7 @@
     <div><span>Jatuh tempo</span><b id="ddDue"></b></div>
   </div>
   <div id="ddPayBox">
+  <div class="akun-pilih"><small id="ddAkunLbl">Bayar pakai</small><div class="akun-chips" id="ddAkun"></div></div>
     <div class="pay-row"><input id="ddPayIn" inputmode="numeric" placeholder="Jumlah dibayar, mis. 100.000"><button id="ddPay">Bayar</button></div>
     <button class="ghost" id="ddLunas">Lunasi semua</button>
   </div>
@@ -693,6 +738,7 @@
   <div style="text-align:center;color:var(--muted);font-size:14px" id="tdTarget"></div>
   <div class="ptrack big"><i id="tdBar"></i></div>
   <div style="text-align:center;color:var(--muted);font-size:13px;margin-top:6px" id="tdHint"></div>
+  <div class="akun-pilih"><small id="tdAkunLbl">Dari / ke sumber dana</small><div class="akun-chips" id="tdAkun"></div></div>
   <div class="pay-row"><input id="tdJumlah" inputmode="numeric" placeholder="Jumlah, mis. 100.000"><button id="tdSetor">Setor</button></div>
   <button class="ghost" id="tdTarik" style="background:var(--red-bg);color:var(--red)">Tarik ke saldo</button>
   <p class="note-small">Setor: uang pindah dari saldo dompet ke tabungan. Tarik: uang kembali ke saldo.</p>
@@ -750,6 +796,52 @@
   </div>
 </div>
 
+<!-- ============ SUMBER DANA: TAMBAH / UBAH ============ -->
+<div class="am-scrim" id="amScrim"></div>
+<div class="am" id="am" role="dialog" aria-labelledby="amJudul">
+  <div class="grab"></div>
+  <h3 id="amJudul" style="margin:0 0 4px;text-align:center">Tambah sumber dana</h3>
+  <p class="note-small" id="amSub" style="margin-top:0">Pilih bank / e-wallet, atau tulis nama sendiri</p>
+  <div class="preset-grid" id="amPreset"></div>
+  <label class="field"><small>Nama</small><input id="amNama" maxlength="30" placeholder="mis. Kas Toko, Rekening Istri"></label>
+  <div class="seg" id="amJenis" style="grid-template-columns:repeat(4,1fr);margin-top:10px">
+    <button data-amj="tunai" class="plain">💵 Tunai</button><button data-amj="bank" class="plain">🏦 Bank</button>
+    <button data-amj="ewallet" class="plain">📱 E-wallet</button><button data-amj="lainnya" class="plain">💳 Lain</button>
+  </div>
+  <button class="primary" id="amSimpan" disabled>Simpan</button>
+  <button class="ghost" id="amBatal" style="background:var(--chip);color:var(--text)">Batal</button>
+</div>
+
+<!-- ============ LEMBAR: DETAIL SUMBER DANA ============ -->
+<div class="sheet" id="akunSheet" role="dialog" aria-label="Detail sumber dana">
+  <div class="grab"></div>
+  <div class="ai" id="adIc" style="width:64px;height:64px;font-size:32px;border-radius:20px;margin:0 auto 8px;display:grid;place-items:center"></div>
+  <div style="text-align:center;font-weight:800;font-size:18px" id="adNama"></div>
+  <div style="text-align:center;color:var(--muted);font-size:14px" id="adJenis"></div>
+  <div class="detail-amt" id="adSaldo"></div>
+  <div class="wa-btns" style="margin-top:8px">
+    <button class="wa-btn primary-sm" id="adUtama">⭐ Jadikan utama</button>
+    <button class="wa-btn" id="adUbah" style="background:var(--chip)">✏️ Ubah</button>
+  </div>
+  <button class="ghost" id="adPindah">🔁 Pindah saldo dari sini</button>
+  <div class="hist" id="adHist"></div>
+  <button class="danger" id="adHapus">Hapus sumber dana</button>
+  <p class="note-small" id="adHapusInfo"></p>
+</div>
+
+<!-- ============ LEMBAR: PINDAH SALDO ============ -->
+<div class="sheet" id="pindahSheet" role="dialog" aria-label="Pindah saldo">
+  <div class="grab"></div>
+  <h3>Pindah saldo</h3>
+  <p class="note-small" style="margin-top:-6px">Mis. tarik tunai, top up e-wallet, transfer antar rekening sendiri. Tidak dihitung sebagai pemasukan/pengeluaran.</p>
+  <div class="akun-pilih"><small id="pDariLbl">Dari</small><div class="akun-chips" id="pDari"></div></div>
+  <div class="pindah-panah">↓</div>
+  <div class="akun-pilih"><small id="pKeLbl">Ke</small><div class="akun-chips" id="pKe"></div></div>
+  <div class="big-input"><span>Rp</span><input id="pJumlah" inputmode="numeric" placeholder="0" autocomplete="off"></div>
+  <div class="terbilang" id="pHint"></div>
+  <button class="primary" id="pSimpan" disabled>Pindahkan</button>
+</div>
+
 <!-- ============ DIALOG KONFIRMASI ============ -->
 <div class="cf-scrim" id="cfScrim"></div>
 <div class="cf" id="cf" role="alertdialog" aria-modal="true" aria-labelledby="cfJudul" aria-describedby="cfPesan">
@@ -794,7 +886,7 @@ const rp = (n) => (n < 0 ? '−Rp' : 'Rp') + fmt(Math.abs(n));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ICON = { 'Makan & Minum': '🍜', 'Transportasi': '🛵', 'Belanja': '🛒', 'Tagihan': '💡', 'Kesehatan': '💊',
   'Pendidikan': '📚', 'Sosial & Ibadah': '🤲', 'Gaji': '💼', 'Usaha': '🏪', 'Pemasukan Lain': '💰', 'Lainnya': '🧾',
-  'Hutang': '📕', 'Bayar Hutang': '📕', 'Piutang': '📗', 'Terima Piutang': '📗', 'Tabungan': '🐷', 'Tarik Tabungan': '🐷' };
+  'Hutang': '📕', 'Bayar Hutang': '📕', 'Piutang': '📗', 'Terima Piutang': '📗', 'Tabungan': '🐷', 'Tarik Tabungan': '🐷', 'Transfer': '🔁' };
 const ic = (k) => ICON[k] || '🧾';
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -835,7 +927,7 @@ function txRow(t) {
   const pos = t.tipe === 'masuk';
   return `<button class="tx" data-id="${t.id}">
     <span class="ic">${ic(t.kategori)}</span>
-    <span class="mid"><b>${esc(t.keterangan)}</b><small>${esc(t.kategori)} · ${t.dibuat.slice(11, 16)}${t.pengirim !== 'web' ? ' · via WA' : ''}</small></span>
+    <span class="mid"><b>${esc(t.keterangan)}</b><small>${esc(t.kategori)} · ${t.dibuat.slice(11, 16)}${t.akun_nama ? ' · ' + IKON_AKUN[t.akun_jenis || 'lainnya'] + ' ' + esc(t.akun_nama) : ''}${t.pengirim !== 'web' ? ' · WA' : ''}</small></span>
     <span class="rt"><b class="${pos ? 'plus' : 'minus'}">${pos ? '+' : '−'}${rp(t.jumlah)}</b><small>Saldo ${rp(t.saldoSetelah)}</small></span>
   </button>`;
 }
@@ -997,6 +1089,8 @@ async function loadDebt() {
 let dJenis = 'hutang';
 function setDJenis(j) {
   dJenis = j;
+  $('#dAkunLbl').textContent = j === 'hutang' ? 'Uang pinjaman masuk ke' : 'Uang dipinjamkan dari';
+  chipsAkun($('#dAkun'));
   $$('[data-djenis]').forEach((b) => b.classList.toggle('on', b.dataset.djenis === j));
   $('#dNameLbl').textContent = j === 'hutang' ? 'Pinjam dari siapa?' : 'Siapa yang meminjam?';
   $('#dEffect').textContent = j === 'hutang' ? 'Saldo kamu bertambah sebesar jumlah pinjaman.' : 'Saldo kamu berkurang sebesar jumlah yang dipinjamkan.';
@@ -1018,7 +1112,7 @@ $('#dNameIn').addEventListener('input', syncDebtForm);
 $('#dSave').onclick = async () => {
   $('#dSave').disabled = true;
   const r = await fetch('/api/hutang', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-    jenis: dJenis, jumlah: angka($('#dAmtIn')), nama: $('#dNameIn').value, keterangan: $('#dNoteIn').value, jatuh_tempo: $('#dDueIn').value || null }) });
+    jenis: dJenis, jumlah: angka($('#dAmtIn')), nama: $('#dNameIn').value, keterangan: $('#dNoteIn').value, jatuh_tempo: $('#dDueIn').value || null, akun_id: akunTerpilih($('#dAkun')) }) });
   if (!r.ok) { toast((await r.json()).error || 'Gagal menyimpan'); $('#dSave').disabled = false; return; }
   hide(); debtTab = dJenis; toast(dJenis === 'hutang' ? '📕 Hutang tercatat' : '📗 Piutang tercatat'); refresh();
 };
@@ -1046,10 +1140,12 @@ async function openDebt(id) {
   const bayar = h.riwayat.filter((t) => t.hutang_peran === 'bayar');
   $('#ddHist').innerHTML = bayar.length ? '<b>Riwayat pembayaran</b>' + bayar.map((t) =>
     `<div><span>${tglP(t.dibuat)} ${t.dibuat.slice(11, 16)}</span><b>${rp(t.jumlah)}</b></div>`).join('') : '';
+  $('#ddAkunLbl').textContent = isH ? 'Bayar pakai' : 'Uang masuk ke';
+  chipsAkun($('#ddAkun'));
   show($('#debtSheet'));
 }
 async function payDebt(jumlah) {
-  const r = await fetch(`/api/hutang/${debtCur.id}/bayar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jumlah }) });
+  const r = await fetch(`/api/hutang/${debtCur.id}/bayar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jumlah, akun_id: akunTerpilih($('#ddAkun')) }) });
   const d = await r.json();
   if (!r.ok) return toast(d.error || 'Gagal');
   hide(); toast(d.lunas ? '🎉 Lunas!' : `✅ Tercatat, sisa ${rp(d.sisa)}`); refresh();
@@ -1110,10 +1206,11 @@ async function openTab(id) {
   $('#tdTarik').disabled = b.terkumpul <= 0;
   $('#tdHist').innerHTML = b.riwayat.length ? '<b>Riwayat</b>' + b.riwayat.slice(0, 20).map((t) =>
     `<div><span>${tglP(t.dibuat)} ${t.dibuat.slice(11, 16)}</span><b class="${t.tipe === 'keluar' ? 'plus' : 'minus'}">${t.tipe === 'keluar' ? '+' : '−'}${rp(t.jumlah)}</b></div>`).join('') : '';
+  chipsAkun($('#tdAkun'));
   show($('#tabSheet'));
 }
 async function aksiTab(aksi, jumlah) {
-  const r = await postJSON(`/api/tabungan/${tabCur.id}/${aksi}`, { jumlah });
+  const r = await postJSON(`/api/tabungan/${tabCur.id}/${aksi}`, { jumlah, akun_id: akunTerpilih($('#tdAkun')) });
   const d = await r.json();
   if (!r.ok) return toast(d.error || 'Gagal');
   hide();
@@ -1139,7 +1236,7 @@ $('#tdDel').onclick = async () => {
 };
 document.addEventListener('click', (e) => { const t = e.target.closest('[data-tab-id]'); if (t) openTab(t.dataset.tabId); });
 
-function refresh() { loadHome(); loadMonth(); loadWA(); loadDebt(); loadTab(); }
+function refresh() { loadHome(); loadMonth(); loadWA(); loadDebt(); loadTab(); loadAkun(); }
 
 // ---------- navigasi ----------
 function go(p) {
@@ -1175,6 +1272,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); })
 let addType = 'keluar';
 function setType(t) {
   addType = t;
+  if ($('#txAkunLbl')) $('#txAkunLbl').textContent = t === 'masuk' ? 'Masuk ke' : 'Bayar pakai';
   $$('.seg button[data-type]').forEach((b) => b.classList.toggle('on', b.dataset.type === t));
 }
 function amtValue() { return Number($('#amt').value.replace(/\D/g, '')) || 0; }
@@ -1193,6 +1291,7 @@ function syncAmt() {
 }
 function openAdd(type) {
   setType(type); $('#amt').value = ''; $('#note').value = ''; $('#txDate').value = isoDari(hariIni()); syncAmt();
+  chipsAkun($('#txAkun'));
   show($('#addSheet'));
   setTimeout(() => $('#amt').focus(), 250);
 }
@@ -1203,7 +1302,7 @@ $('#note').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('#sa
 $('#save').onclick = async () => {
   $('#save').disabled = true;
   const r = await fetch('/api/transaksi', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tipe: addType, jumlah: amtValue(), keterangan: $('#note').value, tanggal: $('#txDate').value || null }) });
+    body: JSON.stringify({ tipe: addType, jumlah: amtValue(), keterangan: $('#note').value, tanggal: $('#txDate').value || null, akun_id: akunTerpilih($('#txAkun')) }) });
   if (!r.ok) { toast('Gagal menyimpan'); $('#save').disabled = false; return; }
   hide(); toast(addType === 'masuk' ? '✅ Uang masuk tercatat' : '✅ Uang keluar tercatat'); refresh();
 };
@@ -1223,6 +1322,7 @@ function openDetail(t) {
   $('#dTime').textContent = new Date(t.dibuat.replace(' ', 'T')).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
   $('#dVia').textContent = t.pengirim === 'web' ? 'Aplikasi' : 'WhatsApp';
   $('#dBal').textContent = rp(t.saldoSetelah);
+  $('#dAkunTx').textContent = t.akun_nama ? `${IKON_AKUN[t.akun_jenis || 'lainnya']} ${t.akun_nama}` : '—';
   show($('#detailSheet'));
 }
 $('#del').onclick = async () => {
@@ -1238,6 +1338,162 @@ function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
 }
+
+// ================= Sumber dana (tunai / bank / e-wallet) =================
+const IKON_AKUN = { tunai: '💵', bank: '🏦', ewallet: '📱', lainnya: '💳' };
+const NAMA_JENIS = { tunai: 'Tunai', bank: 'Rekening bank', ewallet: 'E-wallet', lainnya: 'Lainnya' };
+let akuns = [], presetAkun = [], akunCur = null;
+
+async function loadAkun() {
+  const r = await fetch('/api/akun');
+  if (!r.ok) return;
+  const d = await r.json();
+  akuns = d.akun; presetAkun = d.preset;
+  $('#akunRow').innerHTML = akuns.map((a) => `
+    <button class="akun-card" data-akun-id="${a.id}">
+      ${a.utama ? '<span class="utama">UTAMA</span>' : ''}
+      <span class="ai ${a.jenis}">${IKON_AKUN[a.jenis]}</span>
+      <b>${esc(a.nama)}</b>
+      <span class="sal money ${a.saldo < 0 ? 'minus' : ''}" data-v="${a.saldo}">${rp(a.saldo)}</span>
+    </button>`).join('') + '<button class="akun-card add" id="akunTambahCard">＋<br>Tambah</button>';
+  paintMoney();
+  // perbarui pilihan yang sedang terbuka tanpa mengubah yang dipilih
+  $$('.akun-chips').forEach((el) => { if (el.dataset.sel) chipsAkun(el, Number(el.dataset.sel)); });
+}
+
+/** Gambar pilihan sumber dana di sebuah wadah. Default: sumber utama. */
+function chipsAkun(el, sel, opsi = {}) {
+  if (!el) return;
+  const utama = akuns.find((a) => a.utama);
+  const pilih = akuns.some((a) => a.id === sel) ? sel : (opsi.kecuali === utama?.id ? akuns.find((a) => a.id !== opsi.kecuali)?.id : utama?.id);
+  el.dataset.sel = pilih ?? '';
+  if (opsi.kecuali !== undefined) el.dataset.kecuali = opsi.kecuali;
+  el.innerHTML = akuns.map((a) => `<button type="button" data-chip-akun="${a.id}" class="${a.id === pilih ? 'on' : ''}">${IKON_AKUN[a.jenis]} ${esc(a.nama)}</button>`).join('')
+    + '<button type="button" class="tambah" data-chip-tambah>＋ Tambah</button>';
+}
+const akunTerpilih = (el) => Number(el?.dataset.sel) || null;
+
+document.addEventListener('click', (e) => {
+  const c = e.target.closest('[data-chip-akun]');
+  if (c) {
+    const el = c.closest('.akun-chips');
+    el.dataset.sel = c.dataset.chipAkun;
+    el.querySelectorAll('[data-chip-akun]').forEach((b) => b.classList.toggle('on', b === c));
+    if (el.id === 'pDari' || el.id === 'pKe') cekPindah();
+    return;
+  }
+  const t = e.target.closest('[data-chip-tambah]');
+  if (t) return bukaFormAkun(null, t.closest('.akun-chips'));
+  if (e.target.closest('#akunTambahCard')) return bukaFormAkun(null, null);
+  const k = e.target.closest('[data-akun-id]');
+  if (k) bukaDetailAkun(Number(k.dataset.akunId));
+});
+
+// ---------- form tambah / ubah (lapisan di atas lembar lain) ----------
+let amEdit = null, amUntuk = null, amJenis = 'lainnya';
+function setAmJenis(j) { amJenis = j; $$('[data-amj]').forEach((b) => b.classList.toggle('on', b.dataset.amj === j)); }
+function bukaFormAkun(akun, wadahChips) {
+  amEdit = akun; amUntuk = wadahChips;
+  $('#amJudul').textContent = akun ? `Ubah ${akun.nama}` : 'Tambah sumber dana';
+  $('#amSub').textContent = akun ? 'Ganti nama atau jenisnya' : 'Pilih bank / e-wallet, atau tulis nama sendiri';
+  $('#amPreset').hidden = Boolean(akun);
+  const punya = new Set(akuns.map((a) => a.nama.toLowerCase()));
+  $('#amPreset').innerHTML = presetAkun.map((p) => `<button type="button" data-preset="${esc(p.nama)}" data-pj="${p.jenis}" ${punya.has(p.nama.toLowerCase()) ? 'disabled title="Sudah ada"' : ''}>
+    <span>${IKON_AKUN[p.jenis]}</span>${esc(p.nama)}</button>`).join('');
+  $('#amNama').value = akun ? akun.nama : '';
+  setAmJenis(akun ? akun.jenis : 'lainnya');
+  $('#amSimpan').disabled = !akun;
+  $('#amScrim').classList.add('show'); $('#am').classList.add('show');
+  if (akun) setTimeout(() => $('#amNama').focus(), 250);
+}
+function tutupFormAkun() { $('#amScrim').classList.remove('show'); $('#am').classList.remove('show'); }
+$('#amBatal').onclick = tutupFormAkun;
+$('#amScrim').onclick = tutupFormAkun;
+$$('[data-amj]').forEach((b) => (b.onclick = () => setAmJenis(b.dataset.amj)));
+$('#amNama').addEventListener('input', () => {
+  $('#amSimpan').disabled = !$('#amNama').value.trim();
+  $$('[data-preset]').forEach((b) => b.classList.toggle('on', b.dataset.preset.toLowerCase() === $('#amNama').value.trim().toLowerCase()));
+});
+$('#amPreset').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-preset]');
+  if (!b || b.disabled) return;
+  $('#amNama').value = b.dataset.preset; setAmJenis(b.dataset.pj);
+  $$('[data-preset]').forEach((x) => x.classList.toggle('on', x === b));
+  $('#amSimpan').disabled = false;
+});
+$('#amSimpan').onclick = async () => {
+  const body = { nama: $('#amNama').value, jenis: amJenis };
+  const r = amEdit ? await postJSON(`/api/akun/${amEdit.id}/ubah`, body) : await postJSON('/api/akun', body);
+  const d = await r.json();
+  if (!r.ok) return toast(d.error || 'Gagal');
+  tutupFormAkun();
+  toast(amEdit ? '✅ Disimpan' : `${IKON_AKUN[d.jenis]} ${d.nama} ditambahkan`);
+  await loadAkun();
+  if (amUntuk) { chipsAkun(amUntuk, d.id); if (amUntuk.id === 'pDari' || amUntuk.id === 'pKe') cekPindah(); }
+  if (amEdit && akunCur?.id === d.id) bukaDetailAkun(d.id);
+};
+
+// ---------- detail sumber dana ----------
+async function bukaDetailAkun(id) {
+  await loadAkun();
+  const a = akuns.find((x) => x.id === id);
+  if (!a) return;
+  akunCur = a;
+  $('#adIc').className = 'ai ' + a.jenis; $('#adIc').textContent = IKON_AKUN[a.jenis];
+  $('#adNama').textContent = a.nama;
+  $('#adJenis').textContent = NAMA_JENIS[a.jenis] + (a.utama ? ' · sumber utama' : '');
+  $('#adSaldo').textContent = rp(a.saldo);
+  $('#adSaldo').className = 'detail-amt ' + (a.saldo < 0 ? 'minus' : '');
+  $('#adUtama').hidden = a.utama;
+  $('#adHapus').hidden = akuns.length <= 1;
+  $('#adHapusInfo').textContent = akuns.length <= 1 ? '' : `Bila dihapus, ${a.jumlahTransaksi} transaksinya dipindah ke sumber ${a.utama ? 'lain' : 'utama'}.`;
+  const tx = await fetch('/api/transaksi?akun=' + id).then((x) => x.json());
+  $('#adHist').innerHTML = tx.length ? '<b>Transaksi terakhir</b>' + tx.slice(0, 15).map((t) =>
+    `<div><span>${tglP(t.dibuat)} · ${esc(t.keterangan)}</span><b class="${t.tipe === 'masuk' ? 'plus' : 'minus'}">${t.tipe === 'masuk' ? '+' : '−'}${rp(t.jumlah)}</b></div>`).join('')
+    : '<p class="note-small">Belum ada transaksi di sumber dana ini.</p>';
+  show($('#akunSheet'));
+}
+$('#adUtama').onclick = async () => {
+  await postJSON(`/api/akun/${akunCur.id}/utama`);
+  toast(`⭐ ${akunCur.nama} jadi sumber utama`); bukaDetailAkun(akunCur.id);
+};
+$('#adUbah').onclick = () => bukaFormAkun(akunCur, null);
+$('#adPindah').onclick = () => { hide(); setTimeout(() => bukaPindah(akunCur.id), 260); };
+$('#adHapus').onclick = async () => {
+  if (!(await konfirmasi({ ikon: '🗑️', judul: `Hapus ${akunCur.nama}?`, bahaya: true, ok: 'Hapus',
+    pesan: akunCur.jumlahTransaksi ? `${akunCur.jumlahTransaksi} transaksinya tidak hilang, tapi dipindah ke sumber ${akunCur.utama ? 'lain' : 'utama'}.` : 'Belum ada transaksi di sumber dana ini.' }))) return;
+  const r = await fetch('/api/akun/' + akunCur.id, { method: 'DELETE' });
+  const d = await r.json();
+  if (!r.ok) return toast(d.error || 'Gagal');
+  hide(); toast(`🗑️ Dihapus${d.pindah ? `, ${d.pindah} transaksi pindah ke ${d.ke}` : ''}`); refresh();
+};
+
+// ---------- pindah saldo ----------
+function bukaPindah(dariId) {
+  const utama = akuns.find((a) => a.utama);
+  chipsAkun($('#pDari'), dariId ?? utama?.id);
+  chipsAkun($('#pKe'), akuns.find((a) => a.id !== akunTerpilih($('#pDari')))?.id);
+  $('#pJumlah').value = ''; $('#pHint').textContent = '';
+  cekPindah();
+  show($('#pindahSheet'));
+  setTimeout(() => $('#pJumlah').focus(), 250);
+}
+function cekPindah() {
+  const dari = akunTerpilih($('#pDari')), ke = akunTerpilih($('#pKe'));
+  const v = angka($('#pJumlah'));
+  $('#pSimpan').disabled = !v || !dari || !ke || dari === ke;
+  const a = akuns.find((x) => x.id === dari), b = akuns.find((x) => x.id === ke);
+  $('#pHint').textContent = dari && dari === ke ? 'Pilih tujuan yang berbeda' : (v && a && b ? `${terbilang(v)} · ${a.nama} → ${b.nama}` : terbilang(v));
+}
+$('#pindahBtn').onclick = async () => { if (akuns.length < 2) { toast('Tambah sumber dana kedua dulu'); return bukaFormAkun(null, null); } bukaPindah(); };
+$('#pJumlah').addEventListener('input', () => { const v = angka($('#pJumlah')); $('#pJumlah').value = v ? fmt(v) : ''; cekPindah(); });
+$('#pSimpan').onclick = async () => {
+  $('#pSimpan').disabled = true;
+  const r = await postJSON('/api/akun/transfer', { dari: akunTerpilih($('#pDari')), ke: akunTerpilih($('#pKe')), jumlah: angka($('#pJumlah')) });
+  const d = await r.json();
+  if (!r.ok) { $('#pSimpan').disabled = false; return toast(d.error || 'Gagal'); }
+  hide(); toast(`🔁 ${rp(d.jumlah)} ${d.dari} → ${d.ke}`); refresh();
+};
 
 // ================= Dialog konfirmasi =================
 /** Pengganti confirm(): mengembalikan Promise<boolean>. */
