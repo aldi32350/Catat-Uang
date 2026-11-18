@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catat Keuangan</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --text: #1a1d23; --muted: #5b6270; --line: #e3e6eb;
+    --green: #0f8a4a; --green-bg: #e6f5ec; --red: #c62b2b; --red-bg: #fdecec; --accent: #1f5eff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111318; --card: #1b1e25; --text: #eef0f4; --muted: #a3a9b5; --line: #2c3039;
+      --green: #4ad18a; --green-bg: #15301f; --red: #ff7a7a; --red-bg: #3a1a1a; --accent: #6f9bff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 26px; margin: 0; }
+  .wa { font-size: 15px; padding: 6px 12px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); }
+  .wa.on { color: var(--green); } .wa.off { color: var(--red); }
+  .qr { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-top: 16px; text-align: center; }
+  .qr img { width: 260px; max-width: 100%; background: #fff; padding: 8px; border-radius: 8px; }
+  .saldo { background: var(--accent); color: #fff; border-radius: 16px; padding: 22px; margin-top: 18px; }
+  .saldo small { font-size: 16px; opacity: .9; }
+  .saldo b { display: block; font-size: 40px; letter-spacing: -.5px; margin-top: 2px; word-break: break-all; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card small { color: var(--muted); font-size: 15px; }
+  .card b { display: block; font-size: 24px; margin-top: 2px; }
+  .masuk { color: var(--green); } .keluar { color: var(--red); }
+  form { display: grid; grid-template-columns: 150px 1fr 2fr auto; gap: 10px; margin-top: 18px; }
+  @media (max-width: 640px) { form { grid-template-columns: 1fr 1fr; } form .ket, form button { grid-column: span 2; } }
+  input, select, button { font: inherit; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); min-width: 0; }
+  button { background: var(--accent); color: #fff; border: 0; font-weight: 600; cursor: pointer; }
+  .bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 26px; }
+  .bar h2 { font-size: 20px; margin: 0; }
+  .bar a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .tbl { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin-top: 10px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 560px; }
+  th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { font-size: 14px; color: var(--muted); font-weight: 600; }
+  td.n, th.n { text-align: right; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  .tag { font-size: 13px; color: var(--muted); }
+  .del { background: none; color: var(--muted); padding: 4px 8px; font-size: 18px; }
+  .del:hover { color: var(--red); }
+  .kosong { padding: 28px; text-align: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📒 Catat Keuangan</h1>
+    <span id="wa" class="wa">WhatsApp: memeriksa…</span>
+  </header>
+
+  <div id="qrBox" class="qr" hidden>
+    <p><b>Sambungkan WhatsApp</b><br>Buka WhatsApp di HP → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b>, lalu scan kode ini.</p>
+    <img id="qr" alt="Kode QR WhatsApp">
+  </div>
+
+  <div class="saldo"><small>Saldo terakhir</small><b id="saldo">Rp0</b></div>
+  <div class="grid">
+    <div class="card"><small>Uang masuk <span class="bln"></span></small><b id="pMasuk" class="masuk">Rp0</b></div>
+    <div class="card"><small>Uang keluar <span class="bln"></span></small><b id="pKeluar" class="keluar">Rp0</b></div>
+    <div class="card"><small>Selisih <span class="bln"></span></small><b id="pSelisih">Rp0</b></div>
+  </div>
+
+  <form id="form">
+    <select name="tipe"><option value="keluar">🔴 Keluar</option><option value="masuk">🟢 Masuk</option></select>
+    <input name="jumlah" inputmode="numeric" placeholder="Jumlah, mis. 25000" required>
+    <input name="keterangan" class="ket" placeholder="Keterangan, mis. makan siang">
+    <button>Catat</button>
+  </form>
+
+  <div class="bar">
+    <h2>Riwayat</h2>
+    <div><input type="month" id="bulan"> <a id="ekspor" href="#">⬇ Unduh Excel (CSV)</a></div>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Tanggal</th><th>Keterangan</th><th class="n">Masuk</th><th class="n">Keluar</th><th class="n">Saldo</th><th></th></tr></thead>
+      <tbody id="isi"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const rp = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const now = new Date();
+$('bulan').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+async function muat() {
+  const bln = $('bulan').value;
+  const [r, list] = await Promise.all([
+    fetch('/api/ringkasan?bulan=' + bln).then((x) => x.json()),
+    fetch('/api/transaksi?bulan=' + bln).then((x) => x.json()),
+  ]);
+  $('saldo').textContent = rp(r.total.saldo);
+  const p = r.periode || { masuk: 0, keluar: 0, selisih: 0 };
+  $('pMasuk').textContent = rp(p.masuk);
+  $('pKeluar').textContent = rp(p.keluar);
+  $('pSelisih').textContent = rp(p.selisih);
+  const label = bln ? new Date(bln + '-01T00:00').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : '';
+  document.querySelectorAll('.bln').forEach((e) => (e.textContent = label));
+  $('ekspor').href = '/api/ekspor.csv?bulan=' + bln;
+  $('isi').innerHTML = list.length ? list.map((t) => `
+    <tr>
+      <td>${esc(t.dibuat.slice(0, 16))}</td>
+      <td>${esc(t.keterangan)}<br><span class="tag">${esc(t.kategori)}${t.pengirim !== 'web' ? ' · via WA' : ''}</span></td>
+      <td class="n masuk">${t.tipe === 'masuk' ? rp(t.jumlah) : ''}</td>
+      <td class="n keluar">${t.tipe === 'keluar' ? rp(t.jumlah) : ''}</td>
+      <td class="n"><b>${rp(t.saldoSetelah)}</b></td>
+      <td><button class="del" title="Hapus" data-id="${t.id}">✕</button></td>
+    </tr>`).join('') : '<tr><td colspan="6" class="kosong">Belum ada transaksi di bulan ini.</td></tr>';
+}
+
+async function cekWA() {
+  try {
+    const s = await fetch('/api/status').then((x) => x.json());
+    const wa = $('wa');
+    if (s.nonaktif) { wa.textContent = 'WhatsApp: tidak dijalankan'; wa.className = 'wa off'; $('qrBox').hidden = true; return; }
+    wa.textContent = s.terhubung ? `WhatsApp: terhubung (${s.nomor})` : 'WhatsApp: belum terhubung';
+    wa.className = 'wa ' + (s.terhubung ? 'on' : 'off');
+    $('qrBox').hidden = !s.qr;
+    if (s.qr) $('qr').src = s.qr;
+  } catch { /* server mati */ }
+}
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const jumlah = String(f.get('jumlah')).replace(/\D/g, '');
+  const r = await fetch('/api/transaksi', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipe: f.get('tipe'), jumlah, keterangan: f.get('keterangan') }) });
+  if (!r.ok) return alert((await r.json()).error);
+  e.target.jumlah.value = ''; e.target.keterangan.value = '';
+  muat();
+});
+
+$('isi').addEventListener('click', async (e) => {
+  const id = e.target.dataset?.id;
+  if (!id || !confirm('Hapus transaksi ini?')) return;
+  await fetch('/api/transaksi/' + id, { method: 'DELETE' });
+  muat();
+});
+
+$('bulan').addEventListener('change', muat);
+muat(); cekWA();
+setInterval(() => { muat(); cekWA(); }, 5000); // ikut update saat ada catatan baru dari WA
+</script>
+</body>
+</html>
