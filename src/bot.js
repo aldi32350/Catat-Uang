@@ -4,6 +4,7 @@ import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import pino from 'pino';
 import { join, dirname } from 'node:path';
+import { rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { prosesPesan } from './balasan.js';
 
@@ -55,7 +56,11 @@ export async function mulaiBot() {
       status.terhubung = false;
       const kode = lastDisconnect?.error?.output?.statusCode;
       if (kode === DisconnectReason.loggedOut) {
-        console.log('⚠️  Keluar dari WhatsApp. Hapus folder data/sesi-wa lalu jalankan ulang untuk scan QR baru.');
+        // Sesi lama tidak berlaku lagi: hapus lalu mulai ulang supaya QR baru muncul.
+        console.log('⚠️  Keluar dari WhatsApp (perangkat dilepas). Menyiapkan QR baru...');
+        status.nomor = null;
+        rmSync(AUTH_DIR, { recursive: true, force: true });
+        setTimeout(() => mulaiBot().catch(console.error), 2000);
       } else {
         console.log('🔄 Koneksi terputus, menyambung ulang...');
         setTimeout(() => mulaiBot().catch(console.error), 3000);
