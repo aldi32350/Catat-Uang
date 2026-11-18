@@ -34,6 +34,11 @@ export const BANTUAN = `📒 *Catat Keuangan*
 • beli bensin 20000
 • -1,5jt bayar kos
 
+*Lupa mencatat?* Tambahkan tanggalnya:
+• keluar 25rb bakso *kemarin*
+• keluar 50rb bensin *tgl 15*
+• masuk 2jt gaji *3 hari lalu* / *senin* / *10 nov*
+
 *Perintah:*
 • *saldo* — saldo terakhir
 • *laporan* — rekap bulan ini
@@ -58,10 +63,23 @@ export const BANTUAN = `📒 *Catat Keuangan*
 
 Angka bisa ditulis 25rb, 25k, 25.000, 1,5jt.`;
 
+const HARI_WA = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 function balasTercatat(t) {
   const s = db.saldo(t.user_id);
   const ikon = t.tipe === 'masuk' ? '🟢 Uang MASUK' : '🔴 Uang KELUAR';
-  return `✅ Tercatat\n${ikon}: *${rupiah(t.jumlah)}*\n📝 ${t.keterangan}\n🏷️ ${t.kategori}\n\n💰 Saldo terakhir: *${rupiah(s.saldo)}*`;
+  // Tampilkan tanggal bila bukan hari ini (transaksi yang dicatat mundur)
+  const now = new Date();
+  const hariIni = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const tgl = t.dibuat.slice(0, 10);
+  const baris = tgl !== hariIni ? `\n📅 ${HARI_WA[new Date(tgl + 'T00:00').getDay()]}, ${tglPendek(tgl)}` : '';
+  return `✅ Tercatat\n${ikon}: *${rupiah(t.jumlah)}*\n📝 ${t.keterangan}\n🏷️ ${t.kategori}${baris}\n\n💰 Saldo terakhir: *${rupiah(s.saldo)}*`;
+}
+
+/** 'YYYY-MM-DD' lampau → waktu simpan dengan jam sekarang (urutan tetap rapi). */
+function waktuMundur(tanggal) {
+  if (!tanggal) return undefined;
+  const t = new Date(), pad = (n) => String(n).padStart(2, '0');
+  return `${tanggal} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
 }
 
 // ---------- Struk dari foto: menunggu konfirmasi "ya" / "batal" ----------
@@ -281,7 +299,7 @@ export function prosesPesan(teks, pengirim, uid) {
   if (!hasil) return null;
 
   if (hasil.jenis === 'transaksi') {
-    return balasTercatat(db.tambah({ uid, ...hasil, pengirim }));
+    return balasTercatat(db.tambah({ uid, ...hasil, pengirim, dibuat: waktuMundur(hasil.tanggal) }));
   }
 
   switch (hasil.nama) {

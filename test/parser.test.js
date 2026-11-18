@@ -14,7 +14,7 @@ test('membaca format jumlah', () => {
 
 test('transaksi masuk & keluar', () => {
   assert.deepEqual(uraiPesan('masuk 5jt gaji'),
-    { jenis: 'transaksi', tipe: 'masuk', jumlah: 5000000, keterangan: 'gaji', kategori: 'Gaji' });
+    { jenis: 'transaksi', tipe: 'masuk', jumlah: 5000000, keterangan: 'gaji', kategori: 'Gaji', tanggal: null });
   const k = uraiPesan('keluar 25rb makan siang');
   assert.equal(k.tipe, 'keluar'); assert.equal(k.jumlah, 25000);
   assert.equal(k.keterangan, 'makan siang'); assert.equal(k.kategori, 'Makan & Minum');
@@ -37,4 +37,24 @@ test('chat biasa diabaikan', () => {
   assert.equal(uraiPesan('halo apa kabar'), null);
   assert.equal(uraiPesan('keluar sebentar ya'), null);
   assert.equal(uraiPesan(''), null);
+});
+
+test('tanggal mundur di pesan WA', async () => {
+  const { uraiPesan } = await import('../src/parser.js');
+  const now = new Date(2026, 10, 18, 19, 0); // Rabu, 18 Nov 2026
+  const t = (p) => uraiPesan(p, now);
+  assert.equal(t('keluar 25rb bakso').tanggal, null);
+  assert.equal(t('keluar 25rb bakso kemarin').tanggal, '2026-11-17');
+  assert.equal(t('keluar 25rb bakso kemarin').keterangan, 'bakso');
+  assert.equal(t('keluar 20rb parkir kemarin lusa').tanggal, '2026-11-16');
+  assert.equal(t('keluar 30rb makan 3 hari lalu').tanggal, '2026-11-15');
+  assert.equal(t('beli bensin 20000 senin').tanggal, '2026-11-16');
+  assert.equal(t('keluar tgl 15/11 50rb bensin').jumlah, 50000, 'tanggal tidak terbaca sebagai jumlah');
+  assert.equal(t('keluar tgl 15/11 50rb bensin').tanggal, '2026-11-15');
+  assert.equal(t('keluar 100rb arisan tanggal 25').tanggal, '2026-10-25', 'tgl 25 sudah lewat bulan lalu');
+  assert.equal(t('keluar 75rb pulsa 10 nov').tanggal, '2026-11-10');
+  assert.equal(t('keluar 200rb kado 2/10/2025').tanggal, '2025-10-02');
+  assert.equal(t('keluar 50rb uang jajan minggu ini').tanggal, null);
+  assert.equal(t('keluar 50rb uang jajan minggu ini').keterangan, 'uang jajan minggu ini');
+  assert.equal(t('keluar 25rb makan tadi siang').tanggal, null);
 });

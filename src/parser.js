@@ -186,7 +186,7 @@ export function uraiTabungan(pesan) {
  *  { jenis: 'perintah', nama: 'saldo'|'laporan'|'riwayat'|'hapus'|'bantuan', periode? }
  *  null bila pesan tidak dikenali
  */
-export function uraiPesan(pesan) {
+export function uraiPesan(pesan, sekarang = new Date()) {
   const teks = (pesan || '').trim().replace(/\s+/g, ' ');
   if (!teks) return null;
   const kecil = teks.toLowerCase().replace(/^[/!.#]/, '');
@@ -219,11 +219,15 @@ export function uraiPesan(pesan) {
   }
   if (!tipe) return null;
 
+  // Tanggal dibaca & dibuang dulu, supaya "tgl 15/11" tidak terbaca sebagai jumlah uang
+  const { tanggal, sisa: tanpaTanggal } = bacaTanggalLalu(sisa, sekarang);
+  sisa = tanpaTanggal;
+
   const jumlah = bacaJumlah(sisa);
   if (!jumlah) return null;
 
   const keterangan = sisa.replace(jumlah.cocok, ' ').replace(/\s+/g, ' ').trim()
-    .replace(/^(untuk|buat|utk|dari)\s+/i, '') || (tipe === 'masuk' ? 'Pemasukan' : 'Pengeluaran');
+    .replace(/^(untuk|buat|utk|dari)\s+/i, '').replace(/\s+(pada|pas|waktu)$/i, '') || (tipe === 'masuk' ? 'Pemasukan' : 'Pengeluaran');
 
   return {
     jenis: 'transaksi',
@@ -231,5 +235,67 @@ export function uraiPesan(pesan) {
     jumlah: jumlah.nilai,
     keterangan,
     kategori: tebakKategori(keterangan, tipe),
+    tanggal, // null = hari ini, atau 'YYYY-MM-DD' di masa lalu
   };
+}
+
+const NAMA_HARI_WA = { minggu: 0, ahad: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, "jum'at": 5, sabtu: 6 };
+const BULAN_WA = { jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, jun: 6, jul: 7, agu: 8, agt: 8, agus: 8, sep: 9, okt: 10, nov: 11, des: 12 };
+const isoTgl = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/**
+ * Membaca tanggal LAMPAU di pesan transaksi, lalu membuangnya dari teks.
+ * Dikenali: "kemarin", "kemarin lusa", "3 hari lalu", "senin (lalu)", "tgl 15", "tanggal 15/11",
+ * "15/11", "15-11-2026", "15 nov". Tanggal tanpa bulan/tahun yang jatuh di masa depan
+ * dianggap bulan/tahun sebelumnya. Hari ini → tanggal null.
+ */
+export function bacaTanggalLalu(teks, sekarang = new Date()) {
+  const hari0 = new Date(sekarang.getFullYear(), sekarang.getMonth(), sekarang.getDate());
+  const mundur = (n) => new Date(hari0.getFullYear(), hari0.getMonth(), hari0.getDate() - n);
+  const hasil = (d, cocok) => {
+    const sisa = teks.replace(cocok, ' ').replace(/\s+/g, ' ').trim();
+    if (!d || isNaN(d) || d > hari0) return { tanggal: null, sisa };
+    return { tanggal: +d === +hari0 ? null : isoTgl(d), sisa };
+  };
+  let m;
+  if ((m = teks.match(/\b(?:hari ini|tadi(?: pagi| siang| sore| malam)?)\b/i))) return hasil(hari0, m[0]);
+  if ((m = teks.match(/\b(?:kemarin|kemaren|kmrn|kmarin)\s+lusa\b/i))) return hasil(mundur(2), m[0]);
+  if ((m = teks.match(/\b(?:kemarin|kemaren|kmrn|kmarin|kmrin)(?:\s+(?:pagi|siang|sore|malam))?\b/i))) return hasil(mundur(1), m[0]);
+  if ((m = teks.match(/\b(\d{1,2})\s+(hari|minggu)\s+(?:yang\s+|yg\s+)?(?:lalu|kemarin)\b/i))) {
+    return hasil(mundur(Number(m[1]) * (m[2].toLowerCase() === 'minggu' ? 7 : 1)), m[0]);
+  }
+  if ((m = teks.match(/\b(?:hari\s+)?(minggu(?!\s+(?:ini|depan))|ahad|senin|selasa|rabu|kamis|jum'?at|sabtu)(?:\s+(?:kemarin|lalu|kmrn))?\b/i))) {
+    // jangan salah tangkap "minggu" pada "2 minggu lalu" (sudah ditangani di atas) atau "uang mingguan"
+    const target = NAMA_HARI_WA[m[1].toLowerCase()];
+    let n = (hari0.getDay() - target + 7) % 7;
+    if (n === 0) n = 7; // "senin" saat hari ini Senin = Senin minggu lalu
+    return hasil(mundur(n), m[0]);
+  }
+  // tanggal angka: "tgl 15", "tanggal 15/11", "15/11", "15-11-2026"
+  if ((m = teks.match(/\b(?:tgl\.?|tanggal)\s*(\d{1,2})(?:[/.-](\d{1,2})(?:[/.-](\d{2,4}))?)?\b/i))
+    || (m = teks.match(/\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/))) {
+    return hasil(tanggalLewat(Number(m[1]), m[2] && Number(m[2]), m[3] && Number(m[3]), hari0), m[0]);
+  }
+  // "15 nov", "15 november 2026"
+  if ((m = teks.match(/\b(\d{1,2})\s+(jan|feb|mar|apr|mei|jun|jul|agu|agt|agus|sep|okt|nov|des)[a-z]*\.?(?:\s+(\d{4}))?\b/i))) {
+    return hasil(tanggalLewat(Number(m[1]), BULAN_WA[m[2].toLowerCase()], m[3] && Number(m[3]), hari0), m[0]);
+  }
+  return { tanggal: null, sisa: teks };
+}
+
+/** Tanggal paling baru yang tidak di masa depan, untuk hari/bulan/tahun yang (sebagian) diketahui. */
+function tanggalLewat(d, b, t, hari0) {
+  if (t && t < 100) t += 2000;
+  const valid = (x, bb) => x.getDate() === d && x.getMonth() === bb - 1;
+  if (t) { const x = new Date(t, b - 1, d); return valid(x, b) ? x : null; }
+  if (b) {
+    let x = new Date(hari0.getFullYear(), b - 1, d);
+    if (x > hari0) x = new Date(hari0.getFullYear() - 1, b - 1, d);
+    return valid(x, b) ? x : null;
+  }
+  for (let k = 0; k < 3; k++) { // hanya hari: bulan ini, atau bulan sebelumnya
+    const x = new Date(hari0.getFullYear(), hari0.getMonth() - k, d);
+    if (x.getDate() === d && x <= hari0) return x;
+  }
+  return null;
 }

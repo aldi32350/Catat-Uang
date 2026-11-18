@@ -38,6 +38,7 @@ Sesi tiap nomor WhatsApp disimpan di `data/sesi-wa/p<id>/`, jadi scan cukup seka
 | `laporan` / `hari ini` / `minggu ini` / `bulan lalu` | Rekap per periode + per kategori |
 | `riwayat` | 10 transaksi terakhir |
 | `hapus` | Membatalkan catatan terakhirmu |
+| `keluar 25rb bakso kemarin` | Catat mundur (juga: `tgl 15`, `15/11`, `3 hari lalu`, `senin`, `10 nov`) |
 | `hutang 500rb ke budi buat modal` | Hutang baru (saldo bertambah) |
 | `piutang 200rb ke andi tempo 25/12` | Piutang baru dengan jatuh tempo (saldo berkurang) |
 | `bayar hutang budi 100rb` / `... lunas` | Cicil / lunasi hutang |
