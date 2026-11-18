@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { DAFTAR_KATEGORI } from './parser.js';
+import { bacaStrukOCR } from './ocr.js';
 
 const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-5-5';
 
@@ -32,6 +33,19 @@ function klien() {
 
 /** Benar jika ada kunci API di lingkungan. */
 export const aiAktif = () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+
+/**
+ * Pilih cara membaca struk: Claude bila kunci API dipasang (lebih akurat),
+ * selain itu OCR lokal gratis. Bila Claude gagal, OCR dipakai sebagai cadangan.
+ */
+export async function bacaStrukOtomatis(gambar, mime, caption = '') {
+  if (aiAktif()) {
+    const hasil = await bacaStruk(gambar, mime, caption);
+    if (hasil.ok) return hasil;
+    console.error('Claude gagal membaca struk, memakai OCR:', hasil.alasan);
+  }
+  return bacaStrukOCR(gambar);
+}
 
 /**
  * @param {Buffer} gambar

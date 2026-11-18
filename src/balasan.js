@@ -48,7 +48,7 @@ export const BANTUAN = `📒 *Catat Keuangan*
 • terima piutang andi 50rb
 • *hutang piutang* — lihat daftar & sisa
 
-*Foto struk:* kirim foto struk/nota/bukti transfer, AI akan membacanya lalu minta konfirmasi *ya* / *batal*.
+*Foto struk:* kirim foto struk/nota/bukti transfer, bot membacanya lalu minta konfirmasi *ya* / *batal*.
 
 Angka bisa ditulis 25rb, 25k, 25.000, 1,5jt.`;
 
@@ -95,7 +95,8 @@ export function balasStruk(hasil, pengirim, caption = '', uid) {
     s.tanggal ? `📅 ${s.tanggal}` : null,
     `📝 ${keterangan}`,
     `🏷️ ${draf.kategori}`,
-    s.yakin ? null : '\n⚠️ Angkanya agak buram, tolong dicek.',
+    s.yakin ? null : (s.sumber === 'ocr' ? '\n⚠️ Baris TOTAL tidak ketemu, ini tebakan angka terbesar. Tolong dicek.' : '\n⚠️ Angkanya agak buram, tolong dicek.'),
+    s.sumber === 'ocr' && s.yakin ? '\n_Dibaca OCR gratis, cek angkanya ya._' : null,
     '',
     'Balas *ya* untuk simpan, *batal* untuk membatalkan,',
     'atau ketik jumlah yang benar (mis. *87500*) untuk simpan dengan angka itu.',

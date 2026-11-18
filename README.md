@@ -48,23 +48,34 @@ Pinjaman dan pembayarannya mengubah saldo, tapi **tidak dihitung** sebagai pemas
 
 Penulisan angka yang dikenali: `25rb`, `25k`, `25.000`, `1,5jt`, `Rp 1.250.000`. Kategori (Makan, Transportasi, Tagihan, dll.) dipilih otomatis dari keterangannya.
 
-## Foto struk (dibaca AI)
+## Foto struk
 
-Kirim foto struk, nota, atau bukti transfer ke chat dirimu sendiri. AI (Claude) membaca total, nama toko, tanggal, dan kategorinya, lalu bot meminta konfirmasi:
+Kirim foto struk, nota, atau bukti transfer ke chat dirimu sendiri. Bot membaca total, nama toko, tanggal, dan kategorinya, lalu meminta konfirmasi:
 
 > 🧾 Struk terbaca — 🔴 Uang KELUAR: **Rp87.500** · 🏪 Toko Maju · 🏷️ Belanja
 > Balas **ya** untuk simpan, **batal** untuk membatalkan, atau ketik jumlah yang benar (mis. **87500**).
 
 - Caption pada foto dipakai sebagai keterangan (mis. "belanja bulanan").
-- Jika caption sudah berupa catatan lengkap (mis. `keluar 50rb makan`), foto tidak dikirim ke AI.
+- Jika caption sudah berupa catatan lengkap (mis. `keluar 50rb makan`), foto tidak perlu dibaca.
 - Draf menunggu konfirmasi selama 15 menit.
 
-**Cara mengaktifkan:**
-1. Buat kunci API di https://console.anthropic.com/settings/keys (akun perlu diisi saldo; tiap foto memakai sedikit biaya API).
+**Dua cara membaca:**
+
+| | OCR lokal (default) | AI Claude (opsional) |
+|---|---|---|
+| Biaya | **Gratis** | Berbayar per foto (kunci API) |
+| Privasi | Foto tidak keluar dari komputer | Foto dikirim ke API Anthropic |
+| Akurasi | Bagus untuk struk cetak yang jelas (minimarket, toko); kurang untuk foto buram, kusut, tulisan tangan | Jauh lebih tahan foto jelek & format bebas |
+| Cara kerja | Membaca tulisan, lalu mencari baris TOTAL / GRAND TOTAL / TOTAL BAYAR / NOMINAL (bukan TUNAI/KEMBALI) | Memahami isi struk |
+
+OCR langsung aktif tanpa pengaturan. Saat pertama kali dipakai, data bahasa (±7 MB) diunduh sekali ke `data/tessdata` (butuh internet sekali saja).
+
+**Mengaktifkan Claude (opsional):**
+1. Buat kunci API di https://console.anthropic.com/settings/keys (akun perlu diisi saldo).
 2. Salin `.env.example` menjadi `.env`, lalu isi `ANTHROPIC_API_KEY=...`.
 3. Jalankan ulang `npm start`.
 
-File `.env` tidak ikut ke git. Model default `claude-opus-5-5` (ubah dengan `CLAUDE_MODEL`). Jika model menolak memproses gambar, API otomatis mencoba model cadangan (fitur *server-side fallback*).
+Bila kunci terpasang, Claude dipakai lebih dulu dan OCR menjadi cadangan jika Claude gagal. File `.env` tidak ikut ke git. Model default `claude-opus-5-5` (ubah dengan `CLAUDE_MODEL`).
 
 ## Pengaturan (opsional)
 
@@ -72,7 +83,7 @@ Taruh di file `.env` (lihat `.env.example`) atau sebagai variabel lingkungan.
 
 | Variabel | Fungsi |
 |---|---|
-| `ANTHROPIC_API_KEY=...` | Mengaktifkan fitur baca foto struk |
+| `ANTHROPIC_API_KEY=...` | Opsional: baca foto struk dengan Claude (lebih akurat, berbayar) |
 | `PORT=3000` | Port dashboard |
 | `HOST=0.0.0.0` | Agar dashboard bisa dibuka dari HP di Wi-Fi yang sama (default hanya dari komputer ini) |
 

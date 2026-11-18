@@ -8,7 +8,7 @@ import { existsSync, readdirSync, renameSync, mkdirSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url';
 import * as db from './db.js';
 import { prosesPesan, balasStruk } from './balasan.js';
-import { bacaStruk, aiAktif } from './struk.js';
+import { bacaStrukOtomatis, aiAktif } from './struk.js';
 
 const B = Baileys.default?.makeWASocket ? Baileys.default : Baileys;
 const makeWASocket = B.makeWASocket || B.default;
@@ -159,11 +159,8 @@ async function prosesMasuk(uid, bot, msg) {
   if (dariTeks) return balas(dariTeks);
   if (!foto) return;
 
-  if (!aiAktif()) {
-    return balas('📷 Fitur baca struk belum aktif: kunci API Anthropic belum dipasang (lihat README, bagian "Foto struk").\n\nCatat manual dulu, mis. *keluar 50rb belanja*.');
-  }
-  await balas('🔎 Sedang membaca struk...');
+  await balas(aiAktif() ? '🔎 Sedang membaca struk...' : '🔎 Sedang membaca struk (OCR, ±10–30 detik)...');
   const gambar = await downloadMediaMessage(msg, 'buffer', {}, { reuploadRequest: sock.updateMediaMessage });
-  const hasil = await bacaStruk(gambar, foto.mimetype, teks);
+  const hasil = await bacaStrukOtomatis(gambar, foto.mimetype, teks);
   await balas(balasStruk(hasil, pengirimNomor, teks, uid));
 }
