@@ -176,6 +176,69 @@
   .badge.adm { background: #e5efff; color: var(--brand); }
   html[data-theme="dark"] .badge.adm { background: #13294a; color: #6fb0ff; }
 
+  /* ---------- dialog konfirmasi ---------- */
+  .cf-scrim { position: fixed; inset: 0; background: rgba(10,12,30,.55); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .18s; z-index: 50; }
+  .cf-scrim.show { opacity: 1; pointer-events: auto; }
+  .cf { position: fixed; left: 50%; top: 50%; width: calc(100% - 48px); max-width: 360px; z-index: 51; background: var(--card); color: var(--text);
+    border-radius: 24px; padding: 24px 20px 18px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    opacity: 0; pointer-events: none; transform: translate(-50%, -46%) scale(.94); transition: opacity .18s, transform .22s cubic-bezier(.2,.8,.2,1); }
+  .cf.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+  .cf-ic { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; margin: 0 auto 12px; background: var(--chip); }
+  .cf.bahaya .cf-ic { background: var(--red-bg); }
+  .cf h3 { margin: 0 0 6px; font-size: 18px; line-height: 1.3; }
+  .cf p { margin: 0 0 18px; color: var(--muted); font-size: 14.5px; white-space: pre-line; }
+  .cf-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cf-btns button { padding: 14px 10px; border-radius: 14px; font-weight: 800; font-size: 15px; }
+  .cf-batal { background: var(--chip); }
+  .cf-ok { background: var(--brand); color: #fff; }
+  .cf.bahaya .cf-ok { background: var(--red); }
+  .cf-btns button:focus-visible { outline: 3px solid var(--brand-2); outline-offset: 2px; }
+
+  /* ---------- pemilih tanggal ---------- */
+  .date-field { display: block; width: 100%; text-align: left; cursor: pointer; }
+  .date-field:focus-visible { outline: 2px solid var(--brand); }
+  .date-val { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 2px; font-size: 16px; font-weight: 600; }
+  .date-val .ph { color: var(--muted); font-weight: 500; }
+  .date-val svg { width: 20px; height: 20px; color: var(--brand); flex: none; }
+  .dp-scrim { position: fixed; inset: 0; background: rgba(10,12,30,.5); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 40; }
+  .dp-scrim.show { opacity: 1; pointer-events: auto; }
+  .dp { position: fixed; left: 50%; bottom: 0; width: 100%; max-width: 440px; transform: translate(-50%, 105%); z-index: 41;
+    transition: transform .25s cubic-bezier(.2,.8,.2,1); background: var(--card); border-radius: 24px 24px 0 0;
+    padding: 10px 18px calc(16px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,.18); max-height: 94vh; overflow-y: auto; }
+  .dp.show { transform: translate(-50%, 0); }
+  .dp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .dp-head small { display: block; color: var(--muted); font-weight: 600; font-size: 13px; }
+  .dp-head b { display: block; font-size: 19px; margin-top: 2px; }
+  .dp-x { width: 34px; height: 34px; border-radius: 50%; background: var(--chip); color: var(--muted); font-size: 15px; flex: none; }
+  .dp-quick { display: flex; gap: 8px; overflow-x: auto; margin: 14px -18px 4px; padding: 0 18px 4px; scrollbar-width: none; }
+  .dp-quick::-webkit-scrollbar { display: none; }
+  .dp-quick button { flex: none; padding: 8px 14px; border-radius: 99px; background: var(--chip); font-weight: 700; font-size: 13.5px; }
+  .dp-quick button:hover { background: var(--line); }
+  .dp-quick button.on { background: var(--brand); color: #fff; }
+  .dp-nav { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 6px; }
+  .dp-arrow { width: 40px; height: 40px; border-radius: 12px; font-size: 24px; line-height: 1; color: var(--text); }
+  .dp-arrow:hover, .dp-month:hover { background: var(--chip); }
+  .dp-arrow:disabled { opacity: .25; cursor: default; background: none; }
+  .dp-month { font-weight: 800; font-size: 16px; padding: 8px 14px; border-radius: 12px; }
+  .dp-month::after { content: " ▾"; color: var(--muted); font-size: 12px; }
+  .dp-week, .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
+  .dp-week span { font-size: 12.5px; font-weight: 700; color: var(--muted); padding: 6px 0; }
+  .dp-week .we { color: var(--red); opacity: .8; }
+  .dp-grid button { aspect-ratio: 1; max-height: 46px; margin: 2px; border-radius: 50%; font-weight: 600; font-size: 15px; position: relative; }
+  .dp-grid button:hover:not(:disabled):not(.sel) { background: var(--chip); }
+  .dp-grid button.lain { color: var(--muted); opacity: .45; }
+  .dp-grid button.we:not(.sel) { color: var(--red); }
+  .dp-grid button.today:not(.sel) { box-shadow: inset 0 0 0 2px var(--brand); color: var(--brand); }
+  .dp-grid button.sel { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; box-shadow: 0 4px 12px rgba(22,103,234,.35); }
+  .dp-grid button:disabled { opacity: .22; cursor: default; text-decoration: line-through; }
+  .dp-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 0 4px; }
+  .dp-months button { padding: 14px 4px; border-radius: 14px; background: var(--chip); font-weight: 700; }
+  .dp-months button.sel { background: var(--brand); color: #fff; }
+  .dp-months button:disabled { opacity: .3; }
+  .dp-foot { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin-top: 12px; }
+  .dp-clear { padding: 0 16px; border-radius: 16px; font-weight: 700; color: var(--red); background: var(--red-bg); }
+  .dp-ok { margin-top: 0 !important; }
+
   /* ---------- whatsapp ---------- */
   .wa-card { padding: 14px 16px; margin-bottom: 12px; }
   .wa-head { display: flex; gap: 12px; align-items: center; }
@@ -561,7 +624,12 @@
   <div class="terbilang" id="dAmtHint"></div>
   <label class="field" style="margin-top:14px"><small id="dNameLbl">Pinjam dari siapa?</small><input id="dNameIn" placeholder="mis. Budi" maxlength="60"></label>
   <label class="field" style="margin-top:10px"><small>Keterangan (opsional)</small><input id="dNoteIn" placeholder="mis. modal usaha" maxlength="200"></label>
-  <label class="field" style="margin-top:10px"><small>Jatuh tempo (opsional)</small><input id="dDueIn" type="date"></label>
+  <button type="button" class="field date-field" data-dp-for="dDueIn" style="margin-top:10px">
+    <small>Jatuh tempo (opsional)</small>
+    <span class="date-val"><span data-dp-text="dDueIn" class="ph">Pilih tanggal</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
+  </button>
+  <input type="hidden" id="dDueIn" data-dp data-dp-title="Jatuh tempo">
   <p class="note-small" id="dEffect"></p>
   <button class="primary" id="dSave" disabled>Simpan</button>
 </div>
@@ -601,7 +669,12 @@
   </div>
   <label class="field" style="margin-top:12px"><small>Nama tabungan</small><input id="tNama" maxlength="40" placeholder="mis. Umroh, Dana Darurat"></label>
   <label class="field" style="margin-top:10px"><small>Target (opsional)</small><input id="tTarget" inputmode="numeric" placeholder="mis. 10.000.000"></label>
-  <label class="field" style="margin-top:10px"><small>Ingin tercapai tanggal (opsional)</small><input id="tTenggat" type="date"></label>
+  <button type="button" class="field date-field" data-dp-for="tTenggat" style="margin-top:10px">
+    <small>Ingin tercapai tanggal (opsional)</small>
+    <span class="date-val"><span data-dp-text="tTenggat" class="ph">Pilih tanggal</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
+  </button>
+  <input type="hidden" id="tTenggat" data-dp data-dp-title="Target tercapai">
   <button class="primary" id="tSave" disabled>Buat tabungan</button>
 </div>
 
@@ -668,6 +741,45 @@
     <label class="field" style="margin-top:14px"><small>Password baru untuk user ini</small><input id="uNewPass" type="text" autocomplete="off" placeholder="min. 6 karakter"></label>
     <button class="primary" id="uResetPw">Reset password</button>
     <button class="danger" id="uDel">Hapus user & semua datanya</button>
+  </div>
+</div>
+
+<!-- ============ DIALOG KONFIRMASI ============ -->
+<div class="cf-scrim" id="cfScrim"></div>
+<div class="cf" id="cf" role="alertdialog" aria-modal="true" aria-labelledby="cfJudul" aria-describedby="cfPesan">
+  <div class="cf-ic" id="cfIc">🗑️</div>
+  <h3 id="cfJudul">Yakin?</h3>
+  <p id="cfPesan"></p>
+  <div class="cf-btns"><button type="button" class="cf-batal" id="cfBatal">Batal</button><button type="button" class="cf-ok" id="cfOk">Ya</button></div>
+</div>
+
+<!-- ============ KALENDER (pemilih tanggal) ============ -->
+<div class="dp-scrim" id="dpScrim"></div>
+<div class="dp" id="dp" role="dialog" aria-modal="true" aria-labelledby="dpTitle">
+  <div class="grab"></div>
+  <div class="dp-head">
+    <div><small id="dpTitle">Pilih tanggal</small><b id="dpSel">Belum dipilih</b></div>
+    <button type="button" class="dp-x" id="dpClose" aria-label="Tutup">✕</button>
+  </div>
+  <div class="dp-quick" id="dpQuick">
+    <button type="button" data-dp-q="1d">Besok</button><button type="button" data-dp-q="7d">1 minggu</button>
+    <button type="button" data-dp-q="14d">2 minggu</button><button type="button" data-dp-q="1m">1 bulan</button>
+    <button type="button" data-dp-q="3m">3 bulan</button><button type="button" data-dp-q="6m">6 bulan</button>
+    <button type="button" data-dp-q="12m">1 tahun</button>
+  </div>
+  <div class="dp-nav">
+    <button type="button" class="dp-arrow" id="dpPrev" aria-label="Sebelumnya">‹</button>
+    <button type="button" class="dp-month" id="dpMonth" aria-label="Pilih bulan & tahun"></button>
+    <button type="button" class="dp-arrow" id="dpNext" aria-label="Berikutnya">›</button>
+  </div>
+  <div id="dpDays">
+    <div class="dp-week"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span class="we">Sab</span><span class="we">Min</span></div>
+    <div class="dp-grid" id="dpGrid"></div>
+  </div>
+  <div class="dp-months" id="dpMonths" hidden></div>
+  <div class="dp-foot">
+    <button type="button" class="dp-clear" id="dpClear">Hapus tanggal</button>
+    <button type="button" class="primary dp-ok" id="dpOk">Pilih</button>
   </div>
 </div>
 
@@ -830,7 +942,7 @@ document.addEventListener('click', async (e) => {
   const d = e.target.closest('[data-wa-del]');
   if (d) {
     const on = d.dataset.on === '1';
-    if (on && !confirm(`Putuskan WhatsApp +${d.dataset.no}? Bot berhenti mencatat dari nomor ini. Data keuangan tidak terhapus.`)) return;
+    if (on && !(await konfirmasi({ ikon: '⛔', judul: `Putuskan WhatsApp +${d.dataset.no}?`, pesan: 'Bot berhenti mencatat dari nomor ini sampai kamu scan QR lagi. Data keuangan tidak terhapus.', ok: 'Putuskan', bahaya: true }))) return;
     d.disabled = true;
     await postJSON(`/api/wa/${d.dataset.waDel}/hapus`);
     toast(on ? '⛔ WhatsApp diputuskan' : 'Dihapus'); loadWA();
@@ -945,7 +1057,7 @@ $('#ddPayIn').addEventListener('input', () => { const v = angka($('#ddPayIn')); 
 $('#ddPay').onclick = () => { const v = angka($('#ddPayIn')); if (!v) return toast('Isi jumlahnya dulu'); payDebt(v); };
 $('#ddLunas').onclick = () => payDebt(null);
 $('#ddDel').onclick = async () => {
-  if (!confirm(`Hapus catatan ${debtCur.jenis} ${debtCur.nama}? Transaksi pinjaman & pembayarannya ikut dihapus dari saldo.`)) return;
+  if (!(await konfirmasi({ ikon: '🗑️', judul: `Hapus catatan ${debtCur.jenis} ${debtCur.nama}?`, pesan: 'Transaksi pinjaman dan semua pembayarannya ikut dihapus, saldo dihitung ulang.', ok: 'Hapus', bahaya: true }))) return;
   await fetch('/api/hutang/' + debtCur.id, { method: 'DELETE' });
   hide(); toast('🗑️ Catatan dihapus'); refresh();
 };
@@ -1010,9 +1122,9 @@ async function aksiTab(aksi, jumlah) {
 $('#tdJumlah').addEventListener('input', () => { const v = angka($('#tdJumlah')); $('#tdJumlah').value = v ? fmt(v) : ''; });
 $('#tdTargetIn').addEventListener('input', () => { const v = angka($('#tdTargetIn')); $('#tdTargetIn').value = v ? fmt(v) : ''; });
 $('#tdSetor').onclick = () => { const v = angka($('#tdJumlah')); if (!v) return toast('Isi jumlahnya dulu'); aksiTab('setor', v); };
-$('#tdTarik').onclick = () => {
+$('#tdTarik').onclick = async () => {
   const v = angka($('#tdJumlah'));
-  if (!v && !confirm(`Tarik semua (${rp(tabCur.terkumpul)}) dari ${tabCur.nama}?`)) return;
+  if (!v && !(await konfirmasi({ ikon: '💸', judul: `Tarik semua dari ${tabCur.nama}?`, pesan: `${rp(tabCur.terkumpul)} akan kembali ke saldo dompet.`, ok: 'Tarik semua' }))) return;
   aksiTab('tarik', v || null);
 };
 $('#tdTargetSave').onclick = async () => {
@@ -1020,7 +1132,7 @@ $('#tdTargetSave').onclick = async () => {
   toast('🎯 Target disimpan'); openTab(tabCur.id); loadTab();
 };
 $('#tdDel').onclick = async () => {
-  if (!confirm(`Hapus tabungan ${tabCur.nama}? Isinya (${rp(tabCur.terkumpul)}) kembali ke saldo dompet.`)) return;
+  if (!(await konfirmasi({ ikon: '🗑️', judul: `Hapus tabungan ${tabCur.nama}?`, pesan: tabCur.terkumpul ? `Isinya (${rp(tabCur.terkumpul)}) kembali ke saldo dompet.` : 'Tabungan ini masih kosong.', ok: 'Hapus', bahaya: true }))) return;
   await fetch('/api/tabungan/' + tabCur.id, { method: 'DELETE' });
   hide(); toast('🗑️ Tabungan dihapus'); refresh();
 };
@@ -1113,7 +1225,10 @@ function openDetail(t) {
   show($('#detailSheet'));
 }
 $('#del').onclick = async () => {
-  if (!current || !confirm('Hapus transaksi ini? Saldo akan dihitung ulang.')) return;
+  if (!current) return;
+  const pokok = current.hutang_peran === 'pokok';
+  if (!(await konfirmasi({ ikon: '🗑️', judul: 'Hapus transaksi ini?', pesan: `${current.tipe === 'masuk' ? '+' : '−'}${rp(current.jumlah)} · ${current.keterangan}
+` + (pokok ? 'Catatan hutang/piutangnya ikut dihapus. ' : '') + 'Saldo akan dihitung ulang.', ok: 'Hapus', bahaya: true }))) return;
   await fetch('/api/transaksi/' + current.id, { method: 'DELETE' });
   hide(); toast('🗑️ Transaksi dihapus'); refresh();
 };
@@ -1122,6 +1237,160 @@ function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
 }
+
+// ================= Dialog konfirmasi =================
+/** Pengganti confirm(): mengembalikan Promise<boolean>. */
+function konfirmasi({ judul, pesan = '', ok = 'Ya', batal = 'Batal', ikon = '❓', bahaya = false }) {
+  return new Promise((selesai) => {
+    const el = $('#cf');
+    $('#cfIc').textContent = ikon; $('#cfJudul').textContent = judul; $('#cfPesan').textContent = pesan;
+    $('#cfOk').textContent = ok; $('#cfBatal').textContent = batal;
+    el.classList.toggle('bahaya', bahaya);
+    const fokusSebelum = document.activeElement;
+    const tutup = (hasil) => {
+      el.classList.remove('show'); $('#cfScrim').classList.remove('show');
+      document.removeEventListener('keydown', tombol, true);
+      fokusSebelum?.focus?.({ preventScroll: true });
+      selesai(hasil);
+    };
+    const tombol = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); tutup(false); }
+      if (e.key === 'Tab') { // fokus tetap di dalam dialog
+        const a = $('#cfBatal'), b = $('#cfOk');
+        if (document.activeElement === b && !e.shiftKey) { e.preventDefault(); a.focus(); }
+        else if (document.activeElement === a && e.shiftKey) { e.preventDefault(); b.focus(); }
+      }
+    };
+    $('#cfOk').onclick = () => tutup(true);
+    $('#cfBatal').onclick = () => tutup(false);
+    $('#cfScrim').onclick = () => tutup(false);
+    document.addEventListener('keydown', tombol, true);
+    $('#cfScrim').classList.add('show'); el.classList.add('show');
+    setTimeout(() => (bahaya ? $('#cfBatal') : $('#cfOk')).focus({ preventScroll: true }), 50);
+  });
+}
+
+// ================= Pemilih tanggal (kalender) =================
+const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const NAMA_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const isoDari = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const tglDari = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
+const hariIni = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+function teksPanjang(iso) {
+  const d = tglDari(iso);
+  return `${NAMA_HARI[d.getDay()]}, ${d.getDate()} ${NAMA_BULAN[d.getMonth()]} ${d.getFullYear()}`;
+}
+function teksRelatif(iso) {
+  const n = Math.round((tglDari(iso) - hariIni()) / 864e5);
+  if (n === 0) return 'hari ini';
+  if (n === 1) return 'besok';
+  if (n < 0) return `${-n} hari lalu`;
+  if (n < 60) return `${n} hari lagi`;
+  const bln = Math.round(n / 30.4);
+  return bln < 24 ? `±${bln} bulan lagi` : `±${Math.round(n / 365)} tahun lagi`;
+}
+
+// Kolom tanggal = input tersembunyi; menulis .value otomatis memperbarui teks di tombolnya.
+const nilaiAsli = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+function tulisKolomTanggal(el) {
+  const v = nilaiAsli.get.call(el);
+  const t = $(`[data-dp-text="${el.id}"]`);
+  t.textContent = v ? `${teksPanjang(v)} · ${teksRelatif(v)}` : 'Pilih tanggal';
+  t.classList.toggle('ph', !v);
+}
+$$('input[data-dp]').forEach((el) => {
+  Object.defineProperty(el, 'value', {
+    get() { return nilaiAsli.get.call(el); },
+    set(v) { nilaiAsli.set.call(el, v || ''); tulisKolomTanggal(el); },
+  });
+  tulisKolomTanggal(el);
+});
+
+const dp = { input: null, sel: '', view: null, mode: 'hari' };
+function dpBuka(input) {
+  dp.input = input;
+  dp.sel = input.value || '';
+  const awal = dp.sel ? tglDari(dp.sel) : hariIni();
+  dp.view = new Date(awal.getFullYear(), awal.getMonth(), 1);
+  dp.mode = 'hari';
+  $('#dpTitle').textContent = input.dataset.dpTitle || 'Pilih tanggal';
+  dpGambar();
+  $('#dpScrim').classList.add('show'); $('#dp').classList.add('show');
+  setTimeout(() => ($('#dp .sel') || $('#dp .today') || $('#dpOk')).focus({ preventScroll: true }), 260);
+}
+function dpTutup() {
+  $('#dpScrim').classList.remove('show'); $('#dp').classList.remove('show');
+  if (dp.input) $(`[data-dp-for="${dp.input.id}"]`)?.focus({ preventScroll: true });
+}
+function dpGambar() {
+  const t0 = hariIni();
+  $('#dpSel').innerHTML = dp.sel
+    ? `${teksPanjang(dp.sel)} <span style="color:var(--muted);font-weight:600;font-size:14px">· ${teksRelatif(dp.sel)}</span>`
+    : '<span style="color:var(--muted)">Belum dipilih</span>';
+  $('#dpOk').disabled = !dp.sel;
+  // tandai tombol cepat yang cocok
+  $$('[data-dp-q]').forEach((b) => b.classList.toggle('on', dp.sel && dpCepat(b.dataset.dpQ) === dp.sel));
+
+  const y = dp.view.getFullYear(), m = dp.view.getMonth();
+  $('#dpDays').hidden = dp.mode !== 'hari';
+  $('#dpMonths').hidden = dp.mode !== 'bulan';
+  if (dp.mode === 'bulan') {
+    $('#dpMonth').textContent = String(y);
+    $('#dpPrev').disabled = y <= t0.getFullYear();
+    const selD = dp.sel ? tglDari(dp.sel) : null;
+    $('#dpMonths').innerHTML = NAMA_BULAN.map((n, i) => {
+      const lewat = y < t0.getFullYear() || (y === t0.getFullYear() && i < t0.getMonth());
+      const on = (selD && selD.getFullYear() === y && selD.getMonth() === i) || (!selD && y === dp.view.getFullYear() && i === m);
+      return `<button type="button" data-dp-m="${i}" class="${on ? 'sel' : ''}" ${lewat ? 'disabled' : ''}>${n.slice(0, 3)}</button>`;
+    }).join('');
+    return;
+  }
+  $('#dpMonth').textContent = `${NAMA_BULAN[m]} ${y}`;
+  $('#dpPrev').disabled = y < t0.getFullYear() || (y === t0.getFullYear() && m <= t0.getMonth());
+  const mulai = new Date(y, m, 1 - ((new Date(y, m, 1).getDay() + 6) % 7)); // Senin pertama di grid
+  let html = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(mulai.getFullYear(), mulai.getMonth(), mulai.getDate() + i);
+    const iso = isoDari(d);
+    const kls = [d.getMonth() !== m && 'lain', (d.getDay() === 0 || d.getDay() === 6) && 'we',
+      +d === +t0 && 'today', iso === dp.sel && 'sel'].filter(Boolean).join(' ');
+    html += `<button type="button" data-dp-d="${iso}" class="${kls}" ${d < t0 ? 'disabled' : ''}
+      aria-label="${teksPanjang(iso)}" aria-pressed="${iso === dp.sel}">${d.getDate()}</button>`;
+  }
+  $('#dpGrid').innerHTML = html;
+}
+function dpCepat(kode) {
+  const n = parseInt(kode, 10), t = hariIni();
+  const d = kode.endsWith('d') ? new Date(t.getFullYear(), t.getMonth(), t.getDate() + n)
+    : new Date(t.getFullYear(), t.getMonth() + n, Math.min(t.getDate(), new Date(t.getFullYear(), t.getMonth() + n + 1, 0).getDate()));
+  return isoDari(d);
+}
+function dpPilih(iso) {
+  dp.sel = iso;
+  const d = tglDari(iso);
+  dp.view = new Date(d.getFullYear(), d.getMonth(), 1);
+  dp.mode = 'hari';
+  dpGambar();
+}
+document.addEventListener('click', (e) => {
+  const f = e.target.closest('[data-dp-for]'); if (f) return dpBuka($('#' + f.dataset.dpFor));
+  const d = e.target.closest('[data-dp-d]'); if (d && !d.disabled) return dpPilih(d.dataset.dpD);
+  const q = e.target.closest('[data-dp-q]'); if (q) return dpPilih(dpCepat(q.dataset.dpQ));
+  const mb = e.target.closest('[data-dp-m]');
+  if (mb && !mb.disabled) { dp.view = new Date(dp.view.getFullYear(), Number(mb.dataset.dpM), 1); dp.mode = 'hari'; dpGambar(); }
+});
+$('#dpPrev').onclick = () => { dp.view = dp.mode === 'bulan' ? new Date(dp.view.getFullYear() - 1, dp.view.getMonth(), 1) : new Date(dp.view.getFullYear(), dp.view.getMonth() - 1, 1); dpGambar(); };
+$('#dpNext').onclick = () => { dp.view = dp.mode === 'bulan' ? new Date(dp.view.getFullYear() + 1, dp.view.getMonth(), 1) : new Date(dp.view.getFullYear(), dp.view.getMonth() + 1, 1); dpGambar(); };
+$('#dpMonth').onclick = () => { dp.mode = dp.mode === 'hari' ? 'bulan' : 'hari'; dpGambar(); };
+$('#dpOk').onclick = () => { if (dp.sel) dp.input.value = dp.sel; dpTutup(); };
+$('#dpClear').onclick = () => { dp.input.value = ''; dpTutup(); };
+$('#dpClose').onclick = dpTutup;
+$('#dpScrim').onclick = dpTutup;
+// Esc menutup kalender saja (bukan lembar di belakangnya)
+document.addEventListener('keydown', (e) => {
+  if (!$('#dp').classList.contains('show')) return;
+  if (e.key === 'Escape') { e.stopImmediatePropagation(); dpTutup(); }
+}, true);
 
 // ================= Tema terang / gelap =================
 const IKON_MATAHARI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
@@ -1259,7 +1528,7 @@ $('#uResetPw').onclick = async () => {
   hide(); toast(`🔑 Password @${uCur.username} direset`);
 };
 $('#uDel').onclick = async () => {
-  if (!confirm(`Hapus user @${uCur.username}? SEMUA catatan keuangan, hutang, dan sambungan WhatsApp-nya ikut dihapus dan tidak bisa dikembalikan.`)) return;
+  if (!(await konfirmasi({ ikon: '⚠️', judul: `Hapus user @${uCur.username}?`, pesan: 'SEMUA catatan keuangan, hutang, tabungan, dan sambungan WhatsApp-nya ikut dihapus. Tindakan ini tidak bisa dibatalkan.', ok: 'Hapus user', bahaya: true }))) return;
   const r = await fetch('/api/admin/users/' + uCur.id, { method: 'DELETE' });
   if (!r.ok) return toast((await r.json()).error || 'Gagal');
   hide(); toast('🗑️ User dihapus'); loadUsers();
