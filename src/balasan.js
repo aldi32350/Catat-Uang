@@ -37,53 +37,116 @@ export function rentang(periode, sekarang = new Date()) {
   }
 }
 
-export const BANTUAN = `📒 *Catat Keuangan*
+// ---------- Bantuan: menu singkat + rincian per topik ----------
+const MENU_BANTUAN = `📒 *Catat Uang — Bantuan*
 
-*Catat uang masuk:*
-• masuk 5jt gaji
-• +150rb jual kue
+Cukup ketik seperti ngobrol biasa:
+*apa + berapa + untuk apa + pakai apa*
 
-*Catat uang keluar:*
-• keluar 25rb makan siang
-• beli bensin 20000
-• -1,5jt bayar kos
+✍️ Contoh:
+• keluar 25rb bakso pakai dana
+• masuk 5jt gaji ke bca
 
-*Sumber dana* (bank/e-wallet/tunai):
-• keluar 25rb bakso *pakai dana*
-• masuk 5jt gaji *ke bca*
-• beli bensin 20rb *gopay*
+Pilih topik, balas *bantuan + nomor* (mis. *bantuan 1*):
+
+*1.* 💸 Uang masuk & keluar
+*2.* 💳 Sumber dana (bank, e-wallet, tunai)
+*3.* 🤝 Hutang & piutang
+*4.* 🐷 Tabungan
+*5.* 📊 Cek saldo & laporan
+*6.* 🧾 Foto struk & catat yang terlupa
+
+Angka boleh ditulis *25rb*, *25k*, *25.000*, *1,5jt*.`;
+
+const TOPIK_BANTUAN = [
+  { kata: /^(1|catat|masuk|keluar|uang|transaksi)/, teks: `💸 *Uang masuk & keluar*
+
+Pola: *masuk/keluar + jumlah + keterangan + sumber dana*
+
+🟢 Uang masuk:
+• masuk 5jt gaji ke bca
+• masuk 150rb jual kue ke dana
+• +200rb bonus tunai
+
+🔴 Uang keluar:
+• keluar 25rb makan siang pakai gopay
+• beli bensin 20rb tunai
+• bayar listrik 300rb pakai bri
+• -1,5jt bayar kos pakai mandiri
+
+Kalau sumber dana tidak disebut, bot akan *bertanya* dulu: cukup balas nomornya.
+Salah catat? Ketik *hapus* untuk membatalkan catatan terakhir.` },
+  { kata: /^(2|sumber|dana|bank|e-?wallet|rekening|dompet|pindah|transfer)/, teks: `💳 *Sumber dana*
+
+Sebut di akhir kalimat dengan *pakai / ke / dari / via*:
+• … *pakai dana* · … *pakai gopay* · … *pakai ovo*
+• … *ke bca* · … *ke bri* · … *ke mandiri*
+• … *tunai* / *cash*
+Nama bank/e-wallet baru otomatis ditambahkan.
+
+🔁 Pindah saldo antar sumber (tidak dihitung pengeluaran):
 • pindah 100rb dari bca ke dana
+• topup gopay 50rb dari bri
 • tarik tunai 500rb bca
-Tanpa sebut sumber → pakai sumber *utama*.
+• setor tunai 1jt ke bri
 
-*Lupa mencatat?* Tambahkan tanggalnya:
-• keluar 25rb bakso *kemarin*
-• keluar 50rb bensin *tgl 15*
-• masuk 2jt gaji *3 hari lalu* / *senin* / *10 nov*
+Ketik *saldo* untuk melihat saldo tiap sumber dana.` },
+  { kata: /^(3|hutang|utang|piutang|pinjam)/, teks: `🤝 *Hutang & piutang*
 
-*Perintah:*
+📕 *Kamu pinjam uang* (hutang):
+• hutang 500rb ke budi masuk ke bca
+• hutang 1jt ke pak joko tempo 25/12 tunai
+
+💵 *Kamu bayar hutang*:
+• sudah bayar hutang ke budi 100rb pakai dana
+• bayar hutang budi lunas pakai bca
+
+📗 *Orang pinjam uangmu* (piutang):
+• piutang 200rb ke andi pakai bca
+• pinjamkan 150rb ke rina tunai
+
+💰 *Orang membayar ke kamu*:
+• andi sudah bayar 50rb ke dana
+• rina lunas ke bca
+
+📋 Lihat daftar: *hutang piutang*` },
+  { kata: /^(4|tabung|nabung|celengan)/, teks: `🐷 *Tabungan*
+
+• nabung 100rb umroh dari bca
+• nabung 50rb dana darurat pakai gopay
+• target umroh 10jt
+• tarik tabungan umroh 200rb ke bca
+• tarik tabungan umroh semua ke dana
+
+📋 Lihat semua tabungan: *tabungan*
+Uang yang ditabung pindah dari sumber dana ke tabungan (bukan pengeluaran).` },
+  { kata: /^(5|saldo|laporan|cek|rekap|riwayat)/, teks: `📊 *Cek saldo & laporan*
+
 • *saldo* — saldo total & per sumber dana
 • *laporan* — rekap bulan ini
-• *hari ini* / *minggu ini* / *bulan lalu*
+• *hari ini* / *kemarin* / *minggu ini* / *bulan lalu*
 • *riwayat* — 10 transaksi terakhir
-• *hapus* — batalkan catatan terakhirmu
+• *hutang piutang* — sisa hutang & piutang
+• *tabungan* — progres tabungan` },
+  { kata: /^(6|struk|foto|nota|tanggal|lupa|kemarin)/, teks: `🧾 *Foto struk*
+Kirim foto struk/nota/bukti transfer ke chat ini. Bot membaca totalnya, lalu balas:
+• *ya* — simpan
+• *ya pakai bca* — simpan dengan sumber dana lain
+• *87500* — simpan dengan angka yang benar
+• *batal* — tidak jadi
 
-*Hutang & piutang:*
-• hutang 500rb ke budi buat modal
-• piutang 200rb ke andi tempo 25/12
-• bayar hutang budi 100rb  (atau *lunas*)
-• terima piutang andi 50rb
-• *hutang piutang* — lihat daftar & sisa
+📅 *Lupa mencatat?* Tambahkan kapan:
+• keluar 25rb bakso pakai dana *kemarin*
+• keluar 50rb bensin tunai *tgl 15*
+• masuk 2jt gaji ke bca *3 hari lalu* / *senin* / *10 nov*` },
+];
 
-*Tabungan:*
-• nabung 100rb umroh
-• target umroh 10jt
-• tarik tabungan umroh 50rb  (atau *semua*)
-• *tabungan* — lihat semua & progresnya
-
-*Foto struk:* kirim foto struk/nota/bukti transfer, bot membacanya lalu minta konfirmasi *ya* / *batal*.
-
-Angka bisa ditulis 25rb, 25k, 25.000, 1,5jt.`;
+function bantuan(topik) {
+  if (!topik) return MENU_BANTUAN;
+  const t = TOPIK_BANTUAN.find((x) => x.kata.test(topik.trim().toLowerCase()));
+  return t ? `${t.teks}\n\n↩️ Menu bantuan: ketik *bantuan*` : MENU_BANTUAN;
+}
+export const BANTUAN = MENU_BANTUAN;
 
 const HARI_WA = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 function balasTercatat(t) {
@@ -368,10 +431,63 @@ function prosesTabungan(h, uid, akunId = () => null) {
   return `💸 Tarik *${rupiah(r.jumlah)}* dari *${r.tabungan.nama}*\nSisa tabungan: ${rupiah(r.tabungan.terkumpul)}\n\n💰 Saldo total: *${rupiah(db.saldo(uid).saldo)}*\n${infoAkun(ak, uid)}`;
 }
 
+// ---------- Menunggu pilihan sumber dana ----------
+const tungguAkun = new Map(); // `${uid}:${pengirim}` -> { teks, sampai }
+
+function ringkasTabungan(tb, uid) {
+  if (tb.jenis === 'tabungan-setor') return `🐷 Nabung *${rupiah(tb.jumlah)}* ke ${tb.nama}`;
+  const b = db.cariTabungan(tb.nama, uid);
+  return `💸 Tarik *${tb.jumlah == null ? rupiah(b?.terkumpul || 0) + ' (semua)' : rupiah(tb.jumlah)}* dari tabungan ${tb.nama}`;
+}
+function ringkasHutang(hh) {
+  const j = hh.jumlah == null ? 'sampai lunas' : `*${rupiah(hh.jumlah)}*`;
+  if (hh.jenis === 'hutang-baru') return hh.tipe === 'hutang' ? `📕 Pinjam ${j} dari ${hh.nama}` : `📗 Pinjamkan ${j} ke ${hh.nama}`;
+  return hh.tipe === 'hutang' ? `📕 Bayar hutang ke ${hh.nama} ${j}` : `📗 ${hh.nama} membayar ${j}`;
+}
+
+function tanyaAkun(teks, ringkas, masuk, pengirim, uid) {
+  tungguAkun.set(`${uid}:${pengirim}`, { teks, sampai: Date.now() + BATAS_TUNGGU });
+  const list = db.daftarAkun(uid);
+  return [
+    masuk ? '💳 *Uangnya masuk ke mana?*' : '💳 *Pakai uang dari mana?*',
+    ringkas,
+    '',
+    'Balas *nomornya* saja:',
+    ...list.map((a, i) => `*${i + 1}.* ${IKON_AKUN[a.jenis]} ${a.nama}${a.utama ? ' _(utama)_' : ''}`),
+    '',
+    'Atau ketik nama lain, mis. *gopay* / *bri*. Ketik *batal* untuk membatalkan.',
+    `_Lain kali bisa langsung: …${masuk ? ' ke bca' : ' pakai dana'}_`,
+  ].join('\n');
+}
+
+function jawabAkun(teks, pengirim, uid) {
+  const kunci = `${uid}:${pengirim}`;
+  const t = tungguAkun.get(kunci);
+  if (!t) return null;
+  if (Date.now() > t.sampai) { tungguAkun.delete(kunci); return null; }
+  const j = teks.trim().toLowerCase();
+  if (/^(batal|cancel|gak jadi|ga jadi|nggak jadi|tidak jadi|gajadi)$/.test(j)) { tungguAkun.delete(kunci); return '❎ Dibatalkan, tidak ada yang dicatat.'; }
+  const list = db.daftarAkun(uid);
+  let nama = null;
+  const no = j.match(/^(\d{1,2})\.?$/);
+  if (no) nama = list[Number(no[1]) - 1]?.nama;
+  if (!nama) {
+    // Seluruh balasan berupa nama sumber dana: "bca", "pakai dana", "kas toko"
+    const s = sebutAkun(/^(pakai|pake|via|dari|ke|lewat)\b/.test(j) ? teks.trim() : `via ${teks.trim()}`, uid);
+    if (s.akun && !s.sisa.trim()) nama = s.akun.nama;
+  }
+  if (!nama) return null; // bukan jawaban → diproses seperti pesan biasa, pertanyaan tetap menunggu
+  tungguAkun.delete(kunci);
+  return prosesPesan(`${t.teks} via ${nama}`, pengirim, uid);
+}
+
 /** Mengembalikan teks balasan, atau null bila pesan bukan untuk bot. */
 export function prosesPesan(teks, pengirim, uid) {
   const konfirmasi = prosesKonfirmasi(teks, pengirim, uid);
   if (konfirmasi) return konfirmasi;
+
+  const jawaban = jawabAkun(teks, pengirim, uid);
+  if (jawaban) return jawaban;
 
   const pindah = prosesTransfer(teks, pengirim, uid);
   if (pindah) return pindah;
@@ -380,23 +496,41 @@ export function prosesPesan(teks, pengirim, uid) {
   // Akunnya baru dibuat (bila belum ada) saat benar-benar ada transaksi yang dicatat.
   const { akun: sebut, sisa: kalimat } = sebutAkun(teks, uid);
   const akunId = () => (pastikanAkun(sebut, uid) || db.akunUtama(uid)).id;
+  // Sumber dana wajib jelas: bila tidak disebut & user punya >1 sumber, tanya dulu
+  const perluTanya = !sebut && db.daftarAkunPolos(uid).length > 1;
 
   const tb = uraiTabungan(kalimat);
-  if (tb) return prosesTabungan(tb, uid, akunId);
+  if (tb) {
+    const gerak = tb.jenis === 'tabungan-setor' || (tb.jenis === 'tabungan-tarik' && tb.jumlah !== undefined && db.cariTabungan(tb.nama, uid));
+    if (gerak && perluTanya) return tanyaAkun(teks, ringkasTabungan(tb, uid), tb.jenis === 'tabungan-tarik', pengirim, uid);
+    return prosesTabungan(tb, uid, akunId);
+  }
 
   const hh = uraiHutang(kalimat);
-  if (hh) return prosesHutang(hh, pengirim, uid, akunId);
+  if (hh) {
+    const adaCatatan = hh.jenis === 'hutang-bayar' && db.hutangPerOrang(hh.tipe, uid).some((o) => o.nama.toLowerCase() === hh.nama.toLowerCase());
+    const gerak = hh.jenis === 'hutang-baru' || (hh.jenis === 'hutang-bayar' && hh.jumlah !== undefined && adaCatatan);
+    if (gerak && perluTanya) {
+      const masuk = (hh.jenis === 'hutang-baru') === (hh.tipe === 'hutang'); // pinjam uang / piutang dibayar = uang masuk
+      return tanyaAkun(teks, ringkasHutang(hh), masuk, pengirim, uid);
+    }
+    return prosesHutang(hh, pengirim, uid, akunId);
+  }
 
   const hasil = uraiPesan(kalimat);
   if (!hasil) return null;
 
   if (hasil.jenis === 'transaksi') {
+    if (perluTanya) {
+      const ringkas = `${hasil.tipe === 'masuk' ? '🟢 Masuk' : '🔴 Keluar'} *${rupiah(hasil.jumlah)}* · ${hasil.keterangan}`;
+      return tanyaAkun(teks, ringkas, hasil.tipe === 'masuk', pengirim, uid);
+    }
     return balasTercatat(db.tambah({ uid, ...hasil, pengirim, dibuat: waktuMundur(hasil.tanggal), akun_id: akunId() }));
   }
 
   switch (hasil.nama) {
     case 'bantuan':
-      return BANTUAN;
+      return bantuan(hasil.topik);
     case 'saldo': {
       const s = db.saldo(uid);
       const akun = db.daftarAkun(uid);

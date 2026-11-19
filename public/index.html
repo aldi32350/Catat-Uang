@@ -276,6 +276,10 @@
   .am-scrim.show { opacity: 1; pointer-events: auto; }
   .pindah-panah { text-align: center; font-size: 22px; color: var(--muted); margin: 4px 0 -4px; }
 
+  .cmd-grup { margin-bottom: 10px; }
+  .cmd-grup > b { display: block; padding: 12px 16px 2px; font-size: 14.5px; }
+  .cmd-grup .cmd code { white-space: normal; }
+
   /* ---------- logo bank / e-wallet ---------- */
   .ai.ada-logo { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
   .logo-akun { width: 26px; height: 26px; object-fit: contain; border-radius: 6px; display: block; }
@@ -608,16 +612,34 @@
       <button class="add-debt" id="waAdd">＋ Tambah nomor WhatsApp</button>
       <div class="sec">
         <div class="sec-head"><h2>Cara pakai di chat</h2></div>
-        <div class="card">
-          <div class="cmd"><code>masuk 5jt gaji</code><span>Uang masuk</span></div>
-          <div class="cmd"><code>keluar 25rb makan</code><span>Uang keluar</span></div>
-          <div class="cmd"><code>beli bensin 20000</code><span>Uang keluar</span></div>
-          <div class="cmd"><code>saldo</code><span>Saldo terakhir</span></div>
+        <p style="color:var(--muted);font-size:14px;margin:-4px 0 10px">Pola: <b>apa + berapa + untuk apa + pakai apa</b>. Ketik <code>bantuan</code> di WA untuk panduan lengkap.</p>
+        <div class="card cmd-grup"><b>💸 Uang masuk & keluar</b>
+          <div class="cmd"><code>masuk 5jt gaji ke bca</code><span>Masuk ke BCA</span></div>
+          <div class="cmd"><code>keluar 25rb bakso pakai dana</code><span>Keluar dari DANA</span></div>
+          <div class="cmd"><code>beli bensin 20rb tunai</code><span>Keluar dari Tunai</span></div>
+        </div>
+        <div class="card cmd-grup"><b>💳 Sumber dana</b>
+          <div class="cmd"><code>pindah 100rb dari bca ke dana</code><span>Pindah saldo</span></div>
+          <div class="cmd"><code>tarik tunai 500rb bca</code><span>BCA → Tunai</span></div>
+          <div class="cmd"><code>saldo</code><span>Saldo per sumber</span></div>
+        </div>
+        <div class="card cmd-grup"><b>🤝 Hutang & piutang</b>
+          <div class="cmd"><code>hutang 500rb ke budi masuk ke bca</code><span>Kamu pinjam</span></div>
+          <div class="cmd"><code>sudah bayar hutang ke budi 100rb pakai dana</code><span>Kamu bayar</span></div>
+          <div class="cmd"><code>piutang 200rb ke andi pakai bca</code><span>Orang pinjam</span></div>
+          <div class="cmd"><code>andi sudah bayar 50rb ke dana</code><span>Orang bayar</span></div>
+        </div>
+        <div class="card cmd-grup"><b>🐷 Tabungan</b>
+          <div class="cmd"><code>nabung 100rb umroh dari bca</code><span>Setor</span></div>
+          <div class="cmd"><code>tarik tabungan umroh 50rb ke dana</code><span>Tarik</span></div>
+        </div>
+        <div class="card cmd-grup"><b>📊 Lainnya</b>
           <div class="cmd"><code>laporan</code><span>Rekap bulan ini</span></div>
-          <div class="cmd"><code>hari ini</code><span>Rekap hari ini</span></div>
           <div class="cmd"><code>riwayat</code><span>10 transaksi terakhir</span></div>
           <div class="cmd"><code>hapus</code><span>Batalkan catatan terakhir</span></div>
+          <div class="cmd"><code>keluar 25rb bakso pakai dana kemarin</code><span>Catat yang terlupa</span></div>
         </div>
+        <p class="note-small">Kalau sumber dana tidak disebut, bot akan bertanya dulu, cukup balas nomornya.</p>
       </div>
     </main>
   </section>

@@ -87,6 +87,11 @@ function pisahNama(teks) {
  *  { jenis: 'hutang-bayar', tipe, nama, jumlah: number|null (null = lunasi) }
  *  { jenis: 'perintah', nama: 'daftar-hutang', filter: 'hutang'|'piutang'|null }
  */
+// Kata pembuka yang bukan nama orang (agar "aku bayar", "keluar bayar" tidak dianggap orang membayar piutang)
+const KATA_BUKAN_NAMA = new Set(['aku', 'saya', 'sy', 'gw', 'gue', 'ane', 'kami', 'kita', 'keluar', 'masuk', 'beli', 'belanja', 'mau', 'harus',
+  'belum', 'sudah', 'udah', 'lupa', 'nanti', 'tolong', 'hutang', 'piutang', 'pinjam', 'nabung', 'tarik', 'pindah', 'topup', 'isi', 'setor',
+  'cara', 'gimana', 'bagaimana', 'tadi', 'kemarin', 'hari', 'sudahkah', 'baru', 'untuk', 'buat', 'tagihan', 'bulanan']);
+
 export function uraiHutang(pesan) {
   const teks = (pesan || '').trim().replace(/\s+/g, ' ').replace(/^[/!.#]/, '');
   const k = teks.toLowerCase().replace(/\butang\b/g, 'hutang');
@@ -104,6 +109,24 @@ export function uraiHutang(pesan) {
   if (!bayar) {
     const m = k.match(/^piutang (.+?) (?:dibayar|bayar|lunas|nyicil|cicil)(.*)$/);
     if (m) { bayar = [null, /lunas/.test(k) && !bacaJumlah(m[2]) ? 'lunas' : 'bayar', `${m[1]} ${m[2]}`]; tipe = 'piutang'; }
+  }
+  // "hutang budi lunas"
+  if (!bayar) {
+    const m = k.match(/^hutang (?:ke |sama )?(.+?) (?:sudah |udah )?lunas$/);
+    if (m) { bayar = [null, 'lunasi', m[1]]; tipe = 'hutang'; }
+  }
+  // Aku yang membayar: "sudah bayar hutang ke budi 100rb", "aku udah bayar budi 100rb", "sudah lunasi hutang budi"
+  if (!bayar) {
+    const m = k.match(/^(?:aku |saya |sy |gw |gue |ane )?(?:sudah|udah|sdh|dah|telah) (bayar|nyicil|cicil|melunasi|lunasi|lunas)(?: hutang)? (?:ke |sama |kepada )?(.+)$/);
+    if (m) { bayar = [null, /lunas/.test(m[1]) ? 'lunasi' : 'bayar', m[2]]; tipe = 'hutang'; }
+  }
+  // Orang lain yang membayar: "budi sudah bayar 50rb", "pak joko nyicil 100rb", "andi lunas", "rina tf 50rb"
+  if (!bayar) {
+    const m = k.match(/^((?:pak |bu |bang |mas |mbak |mba |kak |om |tante |teh )?[a-z][a-z'-]*) (?:sudah |udah |sdh |dah |telah )?(bayar|nyicil|cicil|lunas|melunasi|transfer|tf)(?: hutang| hutangnya| utangnya)?\b(.*)$/);
+    if (m && !KATA_BUKAN_NAMA.has(m[1].split(' ').pop())) {
+      bayar = [null, m[2] === 'lunas' || m[2] === 'melunasi' ? 'lunas' : 'bayar', `${m[1]} ${m[3]}`];
+      tipe = 'piutang';
+    }
   }
   if (bayar) {
     let sisa = bayar[2];
@@ -193,7 +216,8 @@ export function uraiPesan(pesan, sekarang = new Date()) {
 
   // ---- Perintah ----
   if (/^(saldo|sisa|cek saldo|saldo terakhir)$/.test(kecil)) return { jenis: 'perintah', nama: 'saldo' };
-  if (/^(bantuan|help|menu|cara|\?)$/.test(kecil)) return { jenis: 'perintah', nama: 'bantuan' };
+  const bantu = kecil.match(/^(?:bantuan|help|menu|cara(?: pakai)?|panduan|\?)(?:\s+(.+))?$/);
+  if (bantu) return { jenis: 'perintah', nama: 'bantuan', topik: bantu[1] || null };
   if (/^(riwayat|histori|history|mutasi)$/.test(kecil)) return { jenis: 'perintah', nama: 'riwayat' };
   if (/^(hapus|batal|undo|hapus terakhir)$/.test(kecil)) return { jenis: 'perintah', nama: 'hapus' };
   const lap = kecil.match(/^(?:laporan|rekap|ringkasan)?\s*(hari ini|kemarin|minggu ini|bulan ini|bulan lalu)?$/);
